@@ -1,0 +1,48 @@
+# Vite/React Debug Checklist (2026-05-16)
+
+## 1. Directory Structure
+- [x] public/index.html exists
+- [x] src/main.jsx exists
+- [x] src/App.jsx exists
+- [x] vite.config.js exists
+- [x] package.json exists
+
+## 2. Vite Config
+- vite.config.js uses @vitejs/plugin-react
+
+## 3. index.html
+- Should be in public/ (Vite 8+)
+- <script type="module" src="/src/main.jsx"></script> present
+- <div id="root"></div> present
+
+## 4. main.jsx
+- Uses ReactDOM.createRoot(document.getElementById("root"))
+- Imports App from "./App.jsx"
+
+## 5. App.jsx
+- Exports a valid React component
+
+## 6. npm run dev
+- No errors in terminal
+- Vite says: Local: http://localhost:5173/
+
+## 7. Browser
+- 404 error means Vite is running but not serving index.html
+- Try accessing: http://localhost:5173/index.html
+- Try moving/copying public/index.html to project root (app/frontend/index.html)
+
+## 8. Windows/Port Issues
+- Make sure no other process is using port 5173
+- Try a different browser or incognito mode
+- Try clearing browser cache
+
+## 9. Vite Version
+- Vite 8+ expects index.html in public/
+- Older Vite expects index.html in project root
+
+## 10. Next Steps
+- If still broken, run: npx vite --debug
+- Check terminal for errors
+- Check browser devtools (F12) for network errors
+
+## 11. Delete this file after debugging

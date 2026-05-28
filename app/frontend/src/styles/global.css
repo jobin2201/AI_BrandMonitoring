@@ -1,0 +1,70 @@
+body {
+  margin: 0;
+  font-family: 'Segoe UI', 'Roboto', Arial, sans-serif;
+  background: #f6f8fa;
+  overflow: hidden;
+}
+
+.dashboard-layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+.sidebar {
+  width: 220px;
+  background: #232946;
+  color: #fff;
+  padding: 32px 0 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: 2px 0 8px rgba(0,0,0,0.04);
+}
+
+.sidebar .nav-link {
+  color: #fff;
+  text-decoration: none;
+  padding: 12px 32px;
+  font-size: 1.1rem;
+  border-left: 4px solid transparent;
+  transition: background 0.2s, border-color 0.2s;
+}
+.sidebar .nav-link.active, .sidebar .nav-link:hover {
+  background: #121629;
+  border-left: 4px solid #eebbc3;
+}
+
+.main-content {
+  flex: 1;
+  padding: 40px 32px 40px 32px;
+  min-width: 0;
+  height: 100vh;
+  overflow-y: auto;
+  background: linear-gradient(120deg, #f6f8fa 60%, #eebbc3 100%);
+  animation: fadeinbg 1.2s cubic-bezier(.4,0,.2,1);
+}
+
+@keyframes fadeinbg {
+  from { background: #232946; }
+  to { background: linear-gradient(120deg, #f6f8fa 60%, #eebbc3 100%); }
+}
+
+.right-panel {
+  width: 260px;
+  background: #fff;
+  border-left: 1px solid #eaeaea;
+  padding: 32px 16px;
+  box-shadow: -2px 0 8px rgba(0,0,0,0.03);
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+@media (max-width: 900px) {
+  .sidebar, .right-panel {
+    display: none;
+  }
+  .main-content {
+    padding: 24px 8px;
+  }
+}

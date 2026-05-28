@@ -1,0 +1,168 @@
+# Project Structure: new_brand_monitoring
+
+new_brand_monitoring/
+│   .gitignore
+│   LICENSE
+│   README.md
+├── app/
+│   docker-compose.yml
+│   ├── ai_pipeline/
+│   │   ├── crisis_detection/
+│   │   ├── embeddings/
+│   │   ├── models/
+│   │   ├── ner/
+│   │   ├── notebooks/
+│   │   ├── pipelines/
+│   │   ├── reputation_scoring/
+│   │   ├── sentiment/
+│   │   │   └── vader_sentiment.py
+│   │   ├── summarization/
+│   │   ├── topic_modeling/
+│   │   └── requirements.txt
+│   ├── backend/
+│   │   ├── .env
+│   │   ├── app/
+│   │   │   ├── api/
+│   │   │   │   │   ├── dependencies/
+│   │   │   │   │   ├── routes/
+│   │   │   │   │   │   ├── articles.py
+│   │   │   │   │   │   ├── auth.py
+│   │   │   │   │   │   ├── crisis.py
+│   │   │   │   │   │   ├── monitors.py
+│   │   │   │   │   │   ├── news.py
+│   │   │   │   │   │   ├── reports.py
+│   │   │   │   │   │   ├── reviews.py
+│   │   │   │   │   │   ├── social.py
+│   │   │   │   │   │   └── __pycache__/
+│   │   │   │   │   ├── reddit/
+│   │   │   │   │   │   ├── __init__.py
+│   │   │   │   │   │   └── reddit_scraper.py
+│   │   │   │   │   ├── youtube/
+│   │   │   │   │   │   └── youtube_scraper.py
+│   │   │   │   │   └── google_news/
+│   │   │   │   │       └── google_news_scraper.py
+│   │   │   ├── core/
+│   │   │   │   ├── config.py
+│   │   │   │   ├── database.py
+│   │   │   │   ├── security.py
+│   │   │   │   └── websocket.py
+│   │   │   ├── main.py
+│   │   │   ├── middleware/
+│   │   │   │   └── .keep
+│   │   │   ├── models/
+│   │   │   │   ├── alerts.py
+│   │   │   │   ├── articles.py
+│   │   │   │   ├── reputation.py
+│   │   │   │   ├── sentiment.py
+│   │   │   │   └── users.py
+│   │   │   ├── repositories/
+│   │   │   │   └── .keep
+│   │   │   ├── schemas/
+│   │   │   │   └── .keep
+│   │   │   ├── services/
+│   │   │   │   ├── ai_service.py
+│   │   │   │   ├── alert_service.py
+│   │   │   │   ├── auth_service.py
+│   │   │   │   ├── kafka_service.py
+│   │   │   │   ├── monitor_service.py
+│   │   │   │   └── news_service.py
+│   │   │   │   ├── entity_resolution/
+│   │   │   │   │   ├── __init__.py
+│   │   │   │   │   ├── brand_resolver.py
+│   │   │   │   │   ├── entity_cache.py
+│   │   │   │   │   ├── llm_entity_resolver.py
+│   │   │   │   │   ├── query_builder.py
+│   │   │   │   │   ├── resolver_manager.py
+│   │   │   │   │   └── wikipedia_resolver.py
+│   │   │   └── utils/
+│   │   │       └── .keep
+│   │   └── requirements.txt
+│   ├── deployment/
+│   │   ├── docker/
+│   │   ├── github-actions/
+│   │   ├── kubernetes/
+│   │   ├── nginx/
+│   │   └── terraform/
+│   ├── docs/
+│   │   ├── api/
+│   │   ├── architecture/
+│   │   ├── deployment/
+│   │   ├── diagrams/
+│   │   └── ui_design/
+│   ├── frontend/
+│   │   ├── .env
+│   │   ├── package.json
+│   │   ├── public/
+│   │   ├── src/
+│   │   └── vite.config.js
+│   ├── kafka/
+│   │   ├── consumers/ (empty)
+│   │   ├── docker-compose.yml
+│   │   ├── producers/ (empty)
+│   │   └── topics/ (empty)
+│   ├── reports/
+│   │   ├── exports/
+│   │   ├── pdf/
+│   │   ├── ppt/
+│   │   └── templates/
+│   ├── scrapers/
+│   │   ├── common/ (empty)
+│   │   ├── linkedin/
+│   │   ├── news/
+│   │   ├── reddit/
+│   │   ├── reviews/
+│   │   ├── rss/
+│   │   │   ├── newsapi_ingester.py
+│   │   │   ├── rss_feeds.py
+│   │   │   └── rss_ingester.py
+│   │   ├── scheduler/
+│   │   │   └── rss_scheduler.py
+│   │   ├── search_engines/
+│   │   ├── tiktok/
+│   │   ├── twitter/
+│   │   └── youtube/
+│   ├── scripts/
+│   │   ├── cleanup.py
+│   │   ├── seed_data.py
+│   │   └── setup.sh
+│   ├── storage/
+│   │   ├── migrations/
+│   │   │   └── .keep
+│   │   ├── minio/
+│   │   │   └── .keep
+│   │   ├── opensearch/
+│   │   │   └── .keep
+│   │   ├── postgres/
+│   │   │   ├── .keep
+│   │   │   └── models.sql
+│   │   └── redis/
+│   │       └── .keep
+│   └── tests/
+│       ├── ai/
+│       ├── backend/
+│       ├── frontend/
+│       └── integration/
+├── docs/
+│   ├── api/
+│   │   └── postman/
+│   │       ├── newsapi_collection.json
+│   │       ├── reddit_collection.json
+│   │       └── youtube_collection.json
+├── kafka/
+│   ├── docker-compose.yml
+│   ├── producers/
+│   │   └── rss_producer.py
+│   └── topics/
+│       └── create_topics.sh
+└── scrapers/
+    ├── common/
+    │   ├── date_utils.py
+    │   ├── helpers.py
+    │   └── logger.py
+    ├── requirements.txt
+    ├── rss/
+    │   ├── newsapi_ingester.py
+    │   ├── rss_feeds.py
+    │   └── rss_ingester.py
+    ├── scheduler/
+    │   └── rss_scheduler.py

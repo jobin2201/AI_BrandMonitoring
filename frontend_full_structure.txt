@@ -1,0 +1,94 @@
+# frontend Full Structure (as of 2026-05-15)
+
+
+frontend/
+├── .env
+├── debug_vite_env.txt
+├── index.html
+├── package.json
+├── package-lock.json
+├── public/         # empty
+├── src/
+│   ├── App.jsx
+│   ├── main.jsx
+│   ├── api/
+│   │   ├── alertsApi.js
+│   │   ├── authApi.js
+│   │   ├── newsApi.js
+│   │   ├── reputationApi.js
+│   │   ├── redditApi.js
+│   │   ├── youtubeApi.js
+│   │   ├── googleNewsApi.js
+│   │   ├── monitorsApi.js
+│   │   └── socialApi.js
+│   ├── assets/
+│   │   ├── icons/
+│   │   │   └── .keep
+│   │   ├── images/
+│   │   │   └── .keep
+│   │   └── logos/
+│   │       └── .keep
+│   ├── components/
+│   │   ├── alerts/        # empty
+│   │   ├── cards/
+│   │   │   └── ArticleCard.jsx
+│   │   ├── icons/
+│   │   │   ├── GoogleNewsIcon.jsx
+│   │   │   └── SourceIcons.jsx
+│   │   ├── charts/        # empty
+│   │   ├── navbar/        # empty
+│   │   ├── sidebar/       # empty
+│   │   ├── tables/        # empty
+│   │   └── widgets/       # empty
+│   ├── constants/         # empty
+│   ├── context/
+│   │   ├── AuthContext.jsx
+│   │   └── ThemeContext.jsx
+│   ├── hooks/
+│   │   ├── useAuth.js
+│   │   ├── useRealtime.js
+│   │   └── useSocket.js
+│   ├── layouts/
+│   │   ├── AuthLayout.jsx
+│   │   └── DashboardLayout.jsx
+│   ├── pages/
+│   │   ├── Competitors/
+│   │   │   └── .keep
+│   │   ├── Crisis/
+│   │   │   └── .keep
+│   │   ├── Dashboard/
+│   │   │   ├── .keep
+│   │   │   └── Home.jsx
+│   │   ├── InternalIntel/
+│   │   ├── SummaryPage.jsx
+│   │   ├── SocialMediaPage.jsx
+│   │   ├── AIAnalysisPage.jsx
+│   │   │   └── .keep
+│   │   ├── Login/
+│   │   │   └── .keep
+│   │   ├── NewsMonitor/
+│   │   │   └── .keep
+│   │   ├── Register/
+│   │   │   └── .keep
+│   │   ├── Reports/
+│   │   │   └── .keep
+│   │   ├── Reputation/
+│   │   │   └── .keep
+│   │   ├── Reviews/
+│   │   │   └── .keep
+│   │   ├── Settings/
+│   │   │   └── .keep
+│   │   └── SocialIntel/
+│   │       └── .keep
+│   │   ├── MentionsPage.jsx
+│   ├── routes/
+│   │   └── AppRoutes.jsx
+│   ├── services/
+│   │   ├── notificationService.js
+│   │   └── websocketService.js
+│   ├── styles/
+│   │   ├── global.css
+│   │   ├── theme.css
+│   │   └── variables.css
+│   └── utils/              # empty
+└── vite.config.js
