@@ -1,118 +1,8 @@
-# import os
-# import json
-# import psycopg2
-# from kafka import KafkaConsumer
-# from dotenv import load_dotenv
-# from app.ai_pipeline.sentiment.vader_sentiment import analyse
-
-# # Load environment variables
-# from pathlib import Path
-# env_path = Path(__file__).resolve().parents[2] / "backend/.env"
-# load_dotenv(dotenv_path=env_path)
-
-# # Kafka Config
-# KAFKA_BOOTSTRAP_SERVERS = os.getenv("KAFKA_BOOTSTRAP_SERVERS")
-
-# # PostgreSQL Config
-# POSTGRES_HOST = os.getenv("POSTGRES_HOST")
-# POSTGRES_PORT = os.getenv("POSTGRES_PORT")
-# POSTGRES_DB = os.getenv("POSTGRES_DB")
-# POSTGRES_USER = os.getenv("POSTGRES_USER")
-# POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD")
-
-# # Connect to PostgreSQL
-# conn = psycopg2.connect(
-#     host=POSTGRES_HOST,
-#     port=POSTGRES_PORT,
-#     database=POSTGRES_DB,
-#     user=POSTGRES_USER,
-#     password=POSTGRES_PASSWORD
-# )
-
-# cursor = conn.cursor()
-
-# # Kafka Consumer
-# consumer = KafkaConsumer(
-#     "brand.news.global",
-#     bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS,
-#     value_deserializer=lambda x: json.loads(x.decode("utf-8")),
-#     auto_offset_reset="earliest",
-#     group_id="nlp-pipeline-v5"
-# )
-
-# print("Consumer is listening...")
-
-# for message in consumer:
-
-#     data = message.value
-
-#     articles = data.get("articles", [])
-
-#     print(f"Received {len(articles)} articles")
-
-#     for article in articles:
-#         try:
-#             source_name = article.get("source", {}).get("name")
-#             title = article.get("title")
-#             url = article.get("url")
-#             author = article.get("author")
-#             published_at = article.get("publishedAt")
-
-#             cursor.execute("""
-#                 INSERT INTO articles (
-#                     source_name,
-#                     url,
-#                     title,
-#                     author,
-#                     published_at
-#                 )
-#                 VALUES (%s, %s, %s, %s, %s)
-#                 ON CONFLICT (url) DO NOTHING
-#             """, (
-#                 source_name,
-#                 url,
-#                 title,
-#                 author,
-#                 published_at
-#             ))
-#             conn.commit()
-#             print("Inserted:", title)
-
-#             # Sentiment analysis
-#             text = f"{title}"
-#             result = analyse(text)
-#             sentiment_label = result["label"]
-#             compound_score = result["compound"]
-
-#             cursor.execute("""
-#                 INSERT INTO sentiment_results (
-#                     article_id,
-#                     sentiment_label,
-#                     compound_score
-#                 )
-#                 VALUES (
-#                     (
-#                         SELECT article_id
-#                         FROM articles
-#                         WHERE url = %s
-#                     ),
-#                     %s,
-#                     %s
-#                 )
-#             """, (
-#                 url,
-#                 sentiment_label,
-#                 compound_score
-#             ))
-#             conn.commit()
-#             print(f"Sentiment: {sentiment_label} ({compound_score})")
-
-#         except Exception as e:
-#             print("Error:", e)
 import os
 import json
 import uuid
 import psycopg2
+from transformers import pipeline
 from kafka import KafkaConsumer, errors as kafka_errors
 from dotenv import load_dotenv
 from pathlib import Path
@@ -135,7 +25,34 @@ conn = psycopg2.connect(
 cursor = conn.cursor()
 
 classifier = ReviewClassifier()
+# ============================================================
+# LOCAL COMPETITOR INTELLIGENCE MODELS
+# ============================================================
 
+try:
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    MODELS_ROOT = os.path.abspath(
+        os.path.join(BASE_DIR, "../models")
+    )
+
+    BART_PATH = os.path.join(
+        MODELS_ROOT,
+        "bart-large-mnli"
+    )
+
+    print("🤖 Loading local competitor intelligence models...")
+
+    ci_zero_shot_classifier = pipeline(
+        "zero-shot-classification",
+        model=BART_PATH,
+        tokenizer=BART_PATH
+    )
+
+    print("✅ Competitor intelligence models loaded")
+
+except Exception as e:
+    print(f"⚠️ CI models not loaded: {e}")
+    ci_zero_shot_classifier = None
 
 try:
     consumer = KafkaConsumer(
@@ -314,7 +231,66 @@ def save_sentiment(article_id: str, item: dict):
     ))
     conn.commit()
 
+# ============================================================
+# COMPETITOR INTELLIGENCE ENRICHMENT
+# ============================================================
 
+def enrich_for_competitor_intelligence(item: dict):
+    """
+    Adds competitor-intelligence labels
+    without affecting existing sentiment pipeline.
+    """
+
+    try:
+
+        if ci_zero_shot_classifier is None:
+            return item
+
+        title = item.get("title", "") or ""
+        text = item.get("text", "") or ""
+
+        combined_text = f"{title}. {text}"
+
+        labels = [
+            "pricing",
+            "feature announcement",
+            "hiring",
+            "funding",
+            "acquisition",
+            "layoff",
+            "comparison",
+            "irrelevant"
+        ]
+
+        result = ci_zero_shot_classifier(
+            combined_text[:1500],
+            candidate_labels=labels
+        )
+
+        item["ci_metric_label"] = result["labels"][0]
+        item["ci_metric_confidence"] = float(result["scores"][0])
+
+        item["ci_metric_ranking"] = [
+            {
+                "label": label,
+                "score": float(score)
+            }
+            for label, score in zip(
+                result["labels"],
+                result["scores"]
+            )
+        ]
+
+    except Exception as e:
+
+        print(
+            f"CI enrichment failed: {e}"
+        )
+
+        item["ci_metric_label"] = "unknown"
+        item["ci_metric_confidence"] = 0.0
+
+    return item
 # ── Main loop ──────────────────────────────────────────────────────────────────
 
 print("🚀 Consumer listening on: brand.news.global, brand.reddit.global, brand.youtube.global")
@@ -351,6 +327,7 @@ def classify_items_safely(items: list, mode: str) -> list:
 
 def save_classified_item(item: dict) -> bool:
     try:
+        item = enrich_for_competitor_intelligence(item)
         item['sentiment'] = item.get('sentiment') or ''
         item['sentiment_confidence'] = item.get('sentiment_confidence') or 0
         item['emotion'] = item.get('emotion') or ''
@@ -359,7 +336,13 @@ def save_classified_item(item: dict) -> bool:
         print("\nDEBUG: Classifier output for item:")
         for k, v in item.items():
             print(f"    {k}: {v}")
+        print(
+            f"    ci_metric_label: {item.get('ci_metric_label')}"
+        )
 
+        print(
+            f"    ci_metric_confidence: {item.get('ci_metric_confidence')}"
+        )
         article_id = save_article(item)
         if article_id:
             save_sentiment(article_id, item)

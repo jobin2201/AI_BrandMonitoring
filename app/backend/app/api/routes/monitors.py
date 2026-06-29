@@ -36,6 +36,12 @@ def ensure_brand_metadata_tables(cur):
     cur.execute("ALTER TABLE brand_mentions ADD COLUMN IF NOT EXISTS relevance_score DOUBLE PRECISION")
     cur.execute("ALTER TABLE brand_mentions ADD COLUMN IF NOT EXISTS semantic_score DOUBLE PRECISION")
     cur.execute("ALTER TABLE monitored_brands ADD COLUMN IF NOT EXISTS industry TEXT")
+    cur.execute("ALTER TABLE monitored_brands ADD COLUMN IF NOT EXISTS entity_type TEXT")
+    cur.execute("ALTER TABLE monitored_brands ADD COLUMN IF NOT EXISTS primary_category TEXT")
+    cur.execute("ALTER TABLE monitored_brands ADD COLUMN IF NOT EXISTS subcategory TEXT")
+    cur.execute("ALTER TABLE monitored_brands ADD COLUMN IF NOT EXISTS competitor_category TEXT")
+    cur.execute("ALTER TABLE monitored_brands ADD COLUMN IF NOT EXISTS manufacturer TEXT")
+    cur.execute("ALTER TABLE monitored_brands ADD COLUMN IF NOT EXISTS categories TEXT[]")
     cur.execute("ALTER TABLE monitored_brands ADD COLUMN IF NOT EXISTS context_terms TEXT[]")
     cur.execute("ALTER TABLE monitored_brands ADD COLUMN IF NOT EXISTS negative_terms TEXT[]")
     cur.execute("ALTER TABLE monitored_brands ADD COLUMN IF NOT EXISTS brand_context TEXT")
@@ -105,20 +111,35 @@ def seed_default_brand_metadata(cur, brand_id, brand_name: str):
         """, (brand_id, phrase, brand_id, phrase))
 
 @router.post("/")
-def create_monitor(brand_name: str = Query(...), aliases: str = Query("")):
+def create_monitor(
+    brand_name: str = Query(...),
+    aliases: str = Query(""),
+    confirmed: bool = Query(False),
+):
     """Create a new brand monitor. aliases = comma-separated e.g. 'Air Jordan,Nike SB'"""
     brand_name = brand_name.strip()
     alias_list = [a.strip() for a in aliases.split(",") if a.strip()] if aliases else []
     brand_profile = build_brand_profile(brand_name, alias_list)
+    if brand_profile.get("needs_disambiguation") and not confirmed:
+        return {
+            "status": "needs_disambiguation",
+            "brand_name": brand_name,
+            "profile": brand_profile,
+            "options": brand_profile.get("disambiguation_options", []),
+            "message": f"We found multiple possible entities for '{brand_name}'.",
+        }
+
     merged_aliases = list(dict.fromkeys([*alias_list, *brand_profile["aliases"]]))
     conn = get_conn(); cur = conn.cursor()
     ensure_brand_metadata_tables(cur)
     cur.execute("""
         INSERT INTO monitored_brands (
-            brand_name, aliases, is_active, industry,
+            brand_name, aliases, is_active, industry, entity_type,
+            primary_category, subcategory, competitor_category,
+            manufacturer, categories,
             context_terms, negative_terms, brand_context
         )
-        VALUES (%s, %s, TRUE, %s, %s, %s, %s)
+        VALUES (%s, %s, TRUE, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         ON CONFLICT (brand_name) DO UPDATE SET
             is_active=TRUE,
             aliases=CASE
@@ -126,6 +147,15 @@ def create_monitor(brand_name: str = Query(...), aliases: str = Query("")):
                 ELSE monitored_brands.aliases
             END,
             industry=COALESCE(EXCLUDED.industry, monitored_brands.industry),
+            entity_type=COALESCE(EXCLUDED.entity_type, monitored_brands.entity_type),
+            primary_category=COALESCE(EXCLUDED.primary_category, monitored_brands.primary_category),
+            subcategory=COALESCE(EXCLUDED.subcategory, monitored_brands.subcategory),
+            competitor_category=COALESCE(EXCLUDED.competitor_category, monitored_brands.competitor_category),
+            manufacturer=COALESCE(EXCLUDED.manufacturer, monitored_brands.manufacturer),
+            categories=CASE
+                WHEN cardinality(EXCLUDED.categories) > 0 THEN EXCLUDED.categories
+                ELSE monitored_brands.categories
+            END,
             context_terms=CASE
                 WHEN cardinality(EXCLUDED.context_terms) > 0 THEN EXCLUDED.context_terms
                 ELSE monitored_brands.context_terms
@@ -140,6 +170,12 @@ def create_monitor(brand_name: str = Query(...), aliases: str = Query("")):
         brand_name,
         merged_aliases,
         brand_profile["industry"],
+        brand_profile["entity_type"],
+        brand_profile["primary_category"],
+        brand_profile["subcategory"],
+        brand_profile["competitor_category"],
+        brand_profile["manufacturer"],
+        brand_profile["categories"],
         brand_profile["positive_terms"],
         brand_profile["negative_terms"],
         brand_profile["brand_context"],

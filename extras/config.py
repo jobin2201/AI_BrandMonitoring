@@ -4,8 +4,10 @@ Hybrid: RoBERTa (local) for sentiment + Your LLM for categories/emotions/aspects
 """
 
 # ── YOUR LOCAL LLM ──
-LLM_API_KEY = "xkzeri-yqtLSxh6DqV3abO7gqehZtwaZgKt-hbgs1Iok7n51Pc0pK6jzXY2HDIPS1Wd2WCw4BeBauzpIGvC1fhAgW_14E-8847bL2qSgU5EZIU9pi3Kw"
-LLM_BASE_URL = "http://192.168.11.92:8081"
+import os
+
+LLM_API_KEY = os.getenv("LLM_API_KEY", "")
+LLM_BASE_URL = os.getenv("LLM_BASE_URL", "http://localhost:8081")
 
 # ── DEFAULT APP SETTINGS ──
 TARGET_APP_ID = "com.google.android.apps.maps"

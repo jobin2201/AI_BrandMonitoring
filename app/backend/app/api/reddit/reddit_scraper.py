@@ -254,8 +254,9 @@ async def _scrape_and_store_reddit_async(
             post_links = await extract_post_links(page)
             print(f"[REDDIT] Extracted post URLs: {post_links}")
 
-            total_links = min(20, len(post_links))
-            for idx, post_url in enumerate(post_links[:20]):
+            post_links = post_links[:10]
+            total_links = len(post_links)
+            for idx, post_url in enumerate(post_links):
                 if len(results) >= 10:
                     break
                 post_data = await extract_post(context, brand, post_url)

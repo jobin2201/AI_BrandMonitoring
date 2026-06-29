@@ -1,7 +1,7 @@
 
 import { LinkedInIcon, TwitterIcon, InstagramIcon, CNNIcon, BBCIcon } from "./components/icons/SourceIcons";
 import { GoogleNewsIcon } from "./components/icons/GoogleNewsIcon";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import DashboardLayout from "./layouts/DashboardLayout";
 import Home from "./pages/Dashboard/Home.jsx";
 import ArticleCard from "./components/cards/ArticleCard";
@@ -9,6 +9,18 @@ import SummaryPage from "./pages/SummaryPage";
 import AIAnalysisPage from "./pages/AIAnalysisPage";
 import SocialMediaPage from "./pages/SocialMediaPage";
 import MentionsPage from "./pages/MentionsPage";
+import CompetitorIntelligence from "./pages/CompetitorIntelligence";
+import ReputationSignals from "./pages/ReputationSignals";
+import BWDashboardPage from "./pages/bw/DashboardPage";
+import CompanySetupPage from "./pages/bw/BrandWorkspace/CompanySetupPage";
+import WorkspaceOverviewPage from "./pages/bw/BrandWorkspace/WorkspaceOverviewPage";
+import BrandMonitoringPage from "./pages/bw/Monitoring/BrandMonitoringPage";
+import ReputationMonitoringPage from "./pages/bw/Monitoring/ReputationMonitoringPage";
+import Mentions101Page from "./pages/bw/Mentions101Page";
+import Sources101Page from "./pages/bw/Sources101Page";
+import AIAnalysis101Page from "./pages/bw/AIAnalysis101Page";
+import IntelligenceCenterPage from "./pages/bw/IntelligenceCenterPage";
+import BWComingSoonPage from "./components/bw/BWComingSoonPage";
 
 
 const PAGES = {
@@ -17,11 +29,83 @@ const PAGES = {
   summary: "Summary",
   ai: "AI Analysis",
   social: "Social Media",
+  competitors: "Competitor Intelligence",
+  reputation: "Reputation Signals",
 };
 
+const BW_ROUTES = {
+  "bw-dashboard": "/bw/dashboard",
+  "bw-workspace-setup": "/bw/workspace/setup",
+  "bw-workspace-overview": "/bw/workspace/overview",
+  "bw-monitoring-brand": "/bw/monitoring/brand",
+  "bw-monitoring-reputation": "/bw/monitoring/reputation",
+  "bw-monitoring-competitor": "/bw/monitoring/competitor",
+  "bw-monitoring-influencer": "/bw/monitoring/influencer",
+  "bw-monitoring-executive": "/bw/monitoring/executive",
+  "bw-monitoring-campaign": "/bw/monitoring/campaign",
+  "bw-mentions": "/bw/mentions",
+  "bw-sources": "/bw/sources",
+  "bw-ai-analysis": "/bw/ai-analysis",
+  "bw-intelligence-center": "/bw/intelligence-center",
+};
+
+const BW_NAVIGATION = [
+  { key: "bw-dashboard", label: "Dashboard" },
+  {
+    key: "bw-monitoring",
+    label: "Monitoring",
+    children: [
+      { key: "bw-monitoring-brand", label: "Brand Monitoring" },
+      { key: "bw-monitoring-reputation", label: "Reputation Monitoring" },
+      { key: "bw-monitoring-competitor", label: "Competitor Monitoring" },
+      { key: "bw-monitoring-influencer", label: "Influencer Monitoring" },
+      { key: "bw-monitoring-executive", label: "Executive Monitoring" },
+      { key: "bw-monitoring-campaign", label: "Campaign Monitoring" },
+    ],
+  },
+  { key: "bw-mentions", label: "Mentions101" },
+  { key: "bw-sources", label: "Sources101" },
+  { key: "bw-ai-analysis", label: "AI Analysis101" },
+  { key: "bw-intelligence-center", label: "Intelligence Center" },
+  {
+    key: "bw-workspace",
+    label: "Brand Workspace",
+    children: [
+      { key: "bw-workspace-setup", label: "Company Setup" },
+      { key: "bw-workspace-overview", label: "Workspace Overview" },
+    ],
+  },
+];
+
+function pageFromPath(pathname) {
+  return Object.entries(BW_ROUTES).find(([, path]) => path === pathname)?.[0] || null;
+}
+
 function Sidebar({ current, setCurrent }) {
+  const [bwOpen, setBwOpen] = useState(current.startsWith("bw-"));
+  const [openGroups, setOpenGroups] = useState({
+    "bw-monitoring": current.startsWith("bw-monitoring-"),
+    "bw-workspace": current.startsWith("bw-workspace-"),
+  });
+
+  useEffect(() => {
+    if (current.startsWith("bw-")) setBwOpen(true);
+    if (current.startsWith("bw-monitoring-")) {
+      setOpenGroups(groups => ({ ...groups, "bw-monitoring": true }));
+    }
+    if (current.startsWith("bw-workspace-")) {
+      setOpenGroups(groups => ({ ...groups, "bw-workspace": true }));
+    }
+  }, [current]);
+
+  const navigate = key => {
+    const path = BW_ROUTES[key] || "/";
+    window.history.pushState({ page: key }, "", path);
+    setCurrent(key);
+  };
+
   return (
-    <nav style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+    <nav style={{ display: "flex", flexDirection: "column", height: "100%", overflowY: "auto" }}>
       <div style={{ fontWeight: 700, fontSize: 22, margin: "0 0 32px 32px", letterSpacing: 1 }}>AIBrand</div>
       {Object.entries(PAGES).map(([key, label]) => (
         <a
@@ -29,17 +113,187 @@ function Sidebar({ current, setCurrent }) {
           className={"nav-link" + (current === key ? " active" : "")}
           href="#"
           style={{ marginBottom: 8 }}
-          onClick={e => { e.preventDefault(); setCurrent(key); }}
+          onClick={e => { e.preventDefault(); navigate(key); }}
         >
           {label}
         </a>
       ))}
+      <div style={{ marginTop: 10, borderTop: "1px solid rgba(255,255,255,0.16)", paddingTop: 10 }}>
+        <button
+          type="button"
+          aria-expanded={bwOpen}
+          onClick={() => setBwOpen(open => !open)}
+          style={{
+            width: "100%",
+            border: 0,
+            borderLeft: current.startsWith("bw-") ? "4px solid #eebbc3" : "4px solid transparent",
+            background: current.startsWith("bw-") ? "#121629" : "transparent",
+            color: "#fff",
+            padding: "12px 24px 12px 28px",
+            font: "inherit",
+            fontWeight: 750,
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            textAlign: "left",
+          }}
+        >
+          <span>BW</span>
+          <span aria-hidden="true" style={{ fontSize: 14 }}>{bwOpen ? "▾" : "▸"}</span>
+        </button>
+
+        {bwOpen && (
+          <div style={{ padding: "5px 0 2px" }}>
+            {BW_NAVIGATION.map(item => (
+              item.children ? (
+                <div key={item.key}>
+                  <button
+                    type="button"
+                    aria-expanded={Boolean(openGroups[item.key])}
+                    onClick={() => setOpenGroups(groups => ({
+                      ...groups,
+                      [item.key]: !groups[item.key],
+                    }))}
+                    style={{
+                      width: "100%",
+                      border: 0,
+                      background: "transparent",
+                      color: "#dbe2ff",
+                      padding: "9px 22px 9px 40px",
+                      font: "inherit",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      textAlign: "left",
+                    }}
+                  >
+                    <span>{item.label}</span>
+                    <span aria-hidden="true">{openGroups[item.key] ? "−" : "+"}</span>
+                  </button>
+                  {openGroups[item.key] && item.children.map(child => (
+                    <a
+                      key={child.key}
+                      href={BW_ROUTES[child.key]}
+                      onClick={event => {
+                        event.preventDefault();
+                        navigate(child.key);
+                      }}
+                      style={{
+                        display: "block",
+                        color: "#fff",
+                        textDecoration: "none",
+                        padding: "9px 18px 9px 56px",
+                        background: current === child.key ? "#121629" : "transparent",
+                        borderLeft: current === child.key ? "4px solid #eebbc3" : "4px solid transparent",
+                        fontSize: 14,
+                      }}
+                    >
+                      {child.label}
+                    </a>
+                  ))}
+                </div>
+              ) : (
+                <a
+                  key={item.key}
+                  href={BW_ROUTES[item.key]}
+                  onClick={event => {
+                    event.preventDefault();
+                    navigate(item.key);
+                  }}
+                  style={{
+                    display: "block",
+                    color: "#fff",
+                    textDecoration: "none",
+                    padding: "9px 18px 9px 40px",
+                    background: current === item.key ? "#121629" : "transparent",
+                    borderLeft: current === item.key ? "4px solid #eebbc3" : "4px solid transparent",
+                    fontSize: 15,
+                  }}
+                >
+                  {item.label}
+                </a>
+              )
+            ))}
+          </div>
+        )}
+      </div>
     </nav>
   );
 }
 
-function RightPanel({ current, filters, setFilters }) {
-  // Example filter UI
+function RightPanel({
+  current,
+  filters,
+  setFilters,
+  bwSourceFilters,
+  setBwSourceFilters,
+  bwDateFilters,
+  setBwDateFilters,
+}) {
+  if (
+    current === "bw-mentions"
+    || current === "bw-sources"
+    || current === "bw-intelligence-center"
+  ) {
+    const bwSources = [
+      ["google_news", "Google News"],
+      ["newsapi", "News API"],
+      ["reddit", "Reddit"],
+      ["youtube", "YouTube"],
+    ];
+    return (
+      <div>
+        <div style={{ fontWeight: 600, marginBottom: 16 }}>BW Source Filters</div>
+        {bwSources.map(([key, label]) => (
+          <label style={{ display: "block", marginBottom: 10 }} key={key}>
+            <input
+              type="checkbox"
+              checked={bwSourceFilters[key]}
+              onChange={event => setBwSourceFilters(currentFilters => ({
+                ...currentFilters,
+                [key]: event.target.checked,
+              }))}
+            />{" "}
+            {label}
+          </label>
+        ))}
+        <div style={{ fontWeight: 600, margin: "24px 0 10px" }}>Date Range</div>
+        <label style={{ display: "grid", gap: 5, marginBottom: 10, fontSize: 13 }}>
+          Start date
+          <input
+            type="date"
+            value={bwDateFilters.startDate}
+            max={bwDateFilters.endDate}
+            onChange={event => setBwDateFilters(currentFilters => ({
+              ...currentFilters,
+              startDate: event.target.value,
+            }))}
+            style={{ width: "100%", boxSizing: "border-box" }}
+          />
+        </label>
+        <label style={{ display: "grid", gap: 5, marginBottom: 10, fontSize: 13 }}>
+          End date
+          <input
+            type="date"
+            value={bwDateFilters.endDate}
+            min={bwDateFilters.startDate}
+            max={todayDateValue()}
+            onChange={event => setBwDateFilters(currentFilters => ({
+              ...currentFilters,
+              endDate: event.target.value || todayDateValue(),
+            }))}
+            style={{ width: "100%", boxSizing: "border-box" }}
+          />
+        </label>
+        <p style={{ marginTop: 20, color: "#6b7280", fontSize: 12, lineHeight: 1.5 }}>
+          These filters apply only to Mentions101 and Sources101.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div>
       <div style={{ fontWeight: 600, marginBottom: 16 }}>Filter Sources</div>
@@ -89,6 +343,7 @@ function SourcesPage({
   googleNewsState, setGoogleNewsState,
   monitorState, setMonitorState
 }) {
+  const [disambiguation, setDisambiguation] = React.useState(null);
 
   // Helper to get current source state
   const getSourceState = () => {
@@ -244,20 +499,43 @@ function SourcesPage({
   };
 
   // Search handler: first search scrapes, repeated searches load cached DB mentions.
-  const handleSearch = (e, brandOverride) => {
+  const handleSearch = (e, brandOverride, confirmed = false, aliasesOverride = null) => {
     if (e) e.preventDefault();
     const rawSearch = (brandOverride !== undefined ? brandOverride : search).trim();
-    const { brand, aliases } = parseBrandInput(rawSearch);
+    const { brand, aliases: parsedAliases } = parseBrandInput(rawSearch);
+    const aliases = aliasesOverride !== null ? aliasesOverride : parsedAliases;
     if (!brand) return;
 
     setLastBrand(brand);
+    if (!confirmed) {
+      setDisambiguation(null);
+    }
     setMonitorState(prev => ({
       ...prev,
       [brand]: { ...(prev[brand] || {}), loading: true, error: "", message: "Checking stored mentions..." }
     }));
 
-    createMonitor(brand, aliases)
+    createMonitor(brand, aliases, confirmed)
       .then(monitor => {
+        if (monitor.status === "needs_disambiguation") {
+          setDisambiguation({
+            brand,
+            options: monitor.options || [],
+            message: monitor.message || `We found multiple possible entities for "${brand}".`
+          });
+          setMonitorState(prev => ({
+            ...prev,
+            [brand]: {
+              ...(prev[brand] || {}),
+              loading: false,
+              error: "",
+              message: "Please choose the entity you want to monitor."
+            }
+          }));
+          return null;
+        }
+
+        setDisambiguation(null);
         setMonitorState(prev => ({
           ...prev,
           [brand]: {
@@ -270,7 +548,9 @@ function SourcesPage({
         }));
         return loadStoredMentions(brand).then(mentions => ({ monitor, mentions }));
       })
-      .then(({ monitor, mentions }) => {
+      .then(payload => {
+        if (!payload) return null;
+        const { monitor, mentions } = payload;
         const sourceCounts = countMentionSources(mentions);
 
         if (mentions.length > 0 && sourceCounts.reddit > 0 && sourceCounts.youtube >= 5) {
@@ -319,13 +599,24 @@ function SourcesPage({
       });
   };
 
+  const handleDisambiguationSelect = option => {
+    const selectedBrand = (option.search_value || option.label || disambiguation?.brand || "").trim();
+    const aliases = Array.isArray(option.aliases) ? option.aliases.join(",") : (option.aliases || "");
+    if (!selectedBrand) return;
+
+    setSearch(selectedBrand);
+    setLastBrand(selectedBrand);
+    setDisambiguation(null);
+    handleSearch(null, selectedBrand, true, aliases);
+  };
+
   const handleRefresh = () => {
     const rawSearch = (search || lastBrand || "").trim();
     const { brand, aliases } = parseBrandInput(rawSearch);
     if (!brand) return;
 
     setLastBrand(brand);
-    createMonitor(brand, aliases)
+    createMonitor(brand, aliases, true)
       .then(monitor => runBrandRefresh(brand, monitor.brand_id, "Force refreshing this brand..."))
       .catch(error => {
         const errorState = {
@@ -402,6 +693,51 @@ function SourcesPage({
         >
           {currentMonitor.loading ? "Starting monitor: " : ""}
           {currentMonitor.error || currentMonitor.message}
+        </div>
+      )}
+      {disambiguation && (
+        <div
+          style={{
+            maxWidth: 720,
+            margin: "-8px 0 24px 0",
+            padding: "14px 16px",
+            borderRadius: 8,
+            background: "#eefbf3",
+            color: "#14532d",
+            border: "1px solid #bbf7d0",
+            boxShadow: "0 1px 4px rgba(22, 101, 52, 0.08)"
+          }}
+        >
+          <div style={{ fontWeight: 700, marginBottom: 6 }}>
+            {disambiguation.message || `We found multiple possible entities for "${disambiguation.brand}".`}
+          </div>
+          <div style={{ fontSize: 14, marginBottom: 12 }}>
+            Select the meaning you want to monitor. I will update the search box and run that search directly.
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {(disambiguation.options || []).map(option => (
+              <button
+                key={`${option.id}-${option.search_value}-${option.label}`}
+                type="button"
+                onClick={() => handleDisambiguationSelect(option)}
+                style={{
+                  width: "100%",
+                  textAlign: "left",
+                  padding: "10px 12px",
+                  borderRadius: 6,
+                  border: "1px solid #86efac",
+                  background: "#ffffff",
+                  color: "#14532d",
+                  cursor: "pointer"
+                }}
+              >
+                <div style={{ fontWeight: 700 }}>{option.label}</div>
+                {option.description && (
+                  <div style={{ fontSize: 13, marginTop: 3, color: "#166534" }}>{option.description}</div>
+                )}
+              </button>
+            ))}
+          </div>
         </div>
       )}
       <div style={{ display: "flex", flexWrap: "wrap", gap: 24 }}>
@@ -565,7 +901,7 @@ function SourcesPage({
 // End of SourcesPage
 
 export default function App() {
-  const [current, setCurrent] = useState("sources");
+  const [current, setCurrent] = useState(() => pageFromPath(window.location.pathname) || "bw-dashboard");
   const [filters, setFilters] = useState({ news: true, reddit: true, facebook: true, startDate: "", endDate: "" });
   // SourcesPage state lifted to App
   const [selected, setSelected] = useState(0);
@@ -576,6 +912,26 @@ export default function App() {
   const [youtubeState, setYouTubeState] = useState({});
   const [googleNewsState, setGoogleNewsState] = useState({});
   const [monitorState, setMonitorState] = useState({});
+  const [competitorState, setCompetitorState] = useState({});
+  const [reputationState, setReputationState] = useState({});
+  const [bwSourceFilters, setBwSourceFilters] = useState({
+    google_news: true,
+    newsapi: true,
+    reddit: true,
+    youtube: true,
+  });
+  const [bwDateFilters, setBwDateFilters] = useState({
+    startDate: "",
+    endDate: todayDateValue(),
+  });
+
+  useEffect(() => {
+    const handlePopState = () => {
+      setCurrent(pageFromPath(window.location.pathname) || "bw-dashboard");
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
 
   let content;
   if (current === "mentions") content = (
@@ -613,14 +969,68 @@ export default function App() {
   } else if (current === "summary") content = <SummaryPage />;
   else if (current === "ai") content = <AIAnalysisPage />;
   else if (current === "social") content = <SocialMediaPage />;
+  else if (current === "competitors") content = (
+    <CompetitorIntelligence
+      lastBrand={lastBrand}
+      monitorState={monitorState}
+      competitorState={competitorState}
+      setCompetitorState={setCompetitorState}
+    />
+  );
+  else if (current === "reputation") content = (
+    <ReputationSignals
+      lastBrand={lastBrand}
+      monitorState={monitorState}
+      reputationState={reputationState}
+      setReputationState={setReputationState}
+    />
+  );
+  else if (current === "bw-dashboard") content = <BWDashboardPage />;
+  else if (current === "bw-workspace-setup") content = <CompanySetupPage />;
+  else if (current === "bw-workspace-overview") content = <WorkspaceOverviewPage />;
+  else if (current === "bw-monitoring-brand") content = <BrandMonitoringPage />;
+  else if (current === "bw-mentions") content = (
+    <Mentions101Page sourceFilters={bwSourceFilters} dateFilters={bwDateFilters} />
+  );
+  else if (current === "bw-sources") content = (
+    <Sources101Page sourceFilters={bwSourceFilters} dateFilters={bwDateFilters} />
+  );
+  else if (current === "bw-monitoring-reputation") content = <ReputationMonitoringPage />;
+  else if (current === "bw-monitoring-competitor") content = <BWComingSoonPage section="Monitoring" title="Competitor Monitoring" />;
+  else if (current === "bw-monitoring-influencer") content = <BWComingSoonPage section="Monitoring" title="Influencer Monitoring" />;
+  else if (current === "bw-monitoring-executive") content = <BWComingSoonPage section="Monitoring" title="Executive Monitoring" />;
+  else if (current === "bw-monitoring-campaign") content = <BWComingSoonPage section="Monitoring" title="Campaign Monitoring" />;
+  else if (current === "bw-ai-analysis") content = <AIAnalysis101Page />;
+  else if (current === "bw-intelligence-center") content = (
+    <IntelligenceCenterPage
+      sourceFilters={bwSourceFilters}
+      dateFilters={bwDateFilters}
+    />
+  );
   else content = <Home />;
 
   return (
     <DashboardLayout
       sidebar={<Sidebar current={current} setCurrent={setCurrent} />}
-      rightPanel={<RightPanel current={current} filters={filters} setFilters={setFilters} />}
+      rightPanel={(
+        <RightPanel
+          current={current}
+          filters={filters}
+          setFilters={setFilters}
+          bwSourceFilters={bwSourceFilters}
+          setBwSourceFilters={setBwSourceFilters}
+          bwDateFilters={bwDateFilters}
+          setBwDateFilters={setBwDateFilters}
+        />
+      )}
     >
       {content}
     </DashboardLayout>
   );
+}
+
+function todayDateValue() {
+  const today = new Date();
+  const offset = today.getTimezoneOffset() * 60000;
+  return new Date(today.getTime() - offset).toISOString().slice(0, 10);
 }

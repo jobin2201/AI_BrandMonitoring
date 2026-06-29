@@ -12,13 +12,40 @@ body {
 
 .sidebar {
   width: 220px;
+  height: 100vh;
+  min-height: 0;
+  box-sizing: border-box;
+  overflow-y: auto;
+  overflow-x: hidden;
   background: #232946;
   color: #fff;
-  padding: 32px 0 0 0;
+  padding: 32px 0 56px 0;
   display: flex;
   flex-direction: column;
   gap: 16px;
   box-shadow: 2px 0 8px rgba(0,0,0,0.04);
+  scrollbar-color: #7d86ae #232946;
+  scrollbar-width: thin;
+}
+
+.sidebar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.sidebar::-webkit-scrollbar-track {
+  background: #232946;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+  border: 2px solid #232946;
+  border-radius: 8px;
+  background: #7d86ae;
+}
+
+.sidebar > nav {
+  box-sizing: border-box;
+  min-height: 100%;
+  padding-bottom: 56px;
 }
 
 .sidebar .nav-link {
@@ -36,10 +63,12 @@ body {
 
 .main-content {
   flex: 1;
-  padding: 40px 32px 40px 32px;
+  box-sizing: border-box;
+  padding: 40px 32px 80px 32px;
   min-width: 0;
   height: 100vh;
   overflow-y: auto;
+  overscroll-behavior: contain;
   background: linear-gradient(120deg, #f6f8fa 60%, #eebbc3 100%);
   animation: fadeinbg 1.2s cubic-bezier(.4,0,.2,1);
 }

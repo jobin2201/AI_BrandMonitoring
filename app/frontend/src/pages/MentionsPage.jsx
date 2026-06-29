@@ -37,7 +37,15 @@ const SENTIMENT_COLORS = {
 };
 
 const MentionsPage = ({ newsState, redditState, youtubeState, googleNewsState, lastBrand }) => {
+  const [activeFilter, setActiveFilter] = React.useState(null);
   const results = getAllResults(newsState, redditState, youtubeState, googleNewsState, lastBrand);
+  const filteredResults = activeFilter
+    ? results.filter(r => (r.sentiment_label || "neutral").toLowerCase() === activeFilter)
+    : results;
+
+  const handleFilterClick = type => {
+    setActiveFilter(prev => prev === type ? null : type);
+  };
 
   return (
     <div className="mentions-page">
@@ -51,23 +59,29 @@ const MentionsPage = ({ newsState, redditState, youtubeState, googleNewsState, l
           {["positive", "negative", "mixed", "neutral"].map(label => {
             const count = results.filter(r => (r.sentiment_label || "neutral").toLowerCase() === label).length;
             const { bg, text } = SENTIMENT_COLORS[label] || SENTIMENT_COLORS.neutral;
+            const isActive = activeFilter === label;
             return (
-              <div key={label} style={{
+              <button key={label} type="button" onClick={() => handleFilterClick(label)} style={{
                 background: bg, color: text,
                 borderRadius: 8, padding: "8px 20px",
                 fontWeight: 700, fontSize: 15,
+                border: isActive ? `2px solid ${text}` : "2px solid transparent",
+                cursor: "pointer",
+                boxShadow: isActive ? "0 0 0 3px rgba(35, 41, 70, 0.08)" : "none"
               }}>
                 {label.charAt(0).toUpperCase() + label.slice(1)}: {count}
-              </div>
+              </button>
             );
           })}
-          <div style={{
+          <button type="button" onClick={() => setActiveFilter(null)} style={{
             background: "#f5f5f5", color: "#333",
             borderRadius: 8, padding: "8px 20px",
             fontWeight: 600, fontSize: 15,
+            border: activeFilter === null ? "2px solid #333" : "2px solid transparent",
+            cursor: "pointer"
           }}>
             Total: {results.length}
-          </div>
+          </button>
         </div>
       )}
 
@@ -77,7 +91,12 @@ const MentionsPage = ({ newsState, redditState, youtubeState, googleNewsState, l
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 8 }}>
-          {results.map((item, idx) => {
+          {filteredResults.length === 0 && (
+            <div style={{ color: "#888", marginTop: 16 }}>
+              No {activeFilter} mentions found.
+            </div>
+          )}
+          {filteredResults.map((item, idx) => {
             let SourceIcon = null;
             if (item._source === "NewsAPI") SourceIcon = NewsApiIcon;
             else if (item._source === "Reddit") SourceIcon = RedditIcon;

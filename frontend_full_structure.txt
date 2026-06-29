@@ -1,6 +1,5 @@
 # frontend Full Structure (as of 2026-05-15)
 
-
 frontend/
 ├── .env
 ├── debug_vite_env.txt
@@ -80,7 +79,7 @@ frontend/
 │   │   │   └── .keep
 │   │   └── SocialIntel/
 │   │       └── .keep
-│   │   ├── MentionsPage.jsx
+│   │   ├── MentionsPage.jsx           # mentions aggregation + sentiment chip filters
 │   ├── routes/
 │   │   └── AppRoutes.jsx
 │   ├── services/

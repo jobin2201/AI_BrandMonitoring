@@ -1,8 +1,8 @@
 const BASE = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
-export async function createMonitor(brand, aliases = "") {
+export async function createMonitor(brand, aliases = "", confirmed = false) {
   const res = await fetch(
-    `${BASE}/api/monitors/?brand_name=${encodeURIComponent(brand)}&aliases=${encodeURIComponent(aliases)}`,
+    `${BASE}/api/monitors/?brand_name=${encodeURIComponent(brand)}&aliases=${encodeURIComponent(aliases)}&confirmed=${confirmed ? "true" : "false"}`,
     { method: "POST" }
   );
   const data = await res.json();

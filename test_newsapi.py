@@ -2,7 +2,7 @@
 from dotenv import load_dotenv
 load_dotenv('app/backend/.env')
 key = os.getenv('NEWS_API_KEY')
-print(f'Loaded NEWS_API_KEY: {key}')
+print(f'Loaded NEWS_API_KEY: {"set" if key else "missing"}')
 q = '"lays"'
 url = 'https://newsapi.org/v2/everything'
 params = {

@@ -1,168 +1,352 @@
 # Project Structure: new_brand_monitoring
 
 new_brand_monitoring/
-│   .gitignore
-│   LICENSE
-│   README.md
+├── .gitignore
+├── LICENSE
+├── README.md
 ├── app/
-│   docker-compose.yml
+│   ├── docker-compose.yml
+│   │
 │   ├── ai_pipeline/
 │   │   ├── crisis_detection/
 │   │   ├── embeddings/
 │   │   ├── models/
+│   │   │   ├── bart-large-mnli/
+│   │   │   │   ├── config.json
+│   │   │   │   ├── merges.txt
+│   │   │   │   ├── model.safetensors
+│   │   │   │   ├── special_tokens_map.json
+│   │   │   │   ├── tokenizer.json
+│   │   │   │   ├── tokenizer_config.json
+│   │   │   │   └── vocab.json
+│   │   │   └── ms-marco-MiniLM-L-6-v2/
+│   │   │       ├── config.json
+│   │   │       ├── model.safetensors
+│   │   │       ├── special_tokens_map.json
+│   │   │       ├── tokenizer.json
+│   │   │       ├── tokenizer_config.json
+│   │   │       └── vocab.txt
 │   │   ├── ner/
 │   │   ├── notebooks/
 │   │   ├── pipelines/
+│   │   │   └── kafka_consumer.py
 │   │   ├── reputation_scoring/
 │   │   ├── sentiment/
-│   │   │   └── vader_sentiment.py
+│   │   │   ├── vader_sentiment.py
+│   │   │   └── hybrid_classifier.py
 │   │   ├── summarization/
 │   │   ├── topic_modeling/
 │   │   └── requirements.txt
+│   │
 │   ├── backend/
 │   │   ├── .env
+│   │   ├── test_gliner.py
+│   │   ├── test_redis.py
+│   │   ├── test_torch.py
+│   │   │
 │   │   ├── app/
+│   │   │   ├── main.py
+│   │   │   │
 │   │   │   ├── api/
-│   │   │   │   │   ├── dependencies/
-│   │   │   │   │   ├── routes/
-│   │   │   │   │   │   ├── articles.py
-│   │   │   │   │   │   ├── auth.py
-│   │   │   │   │   │   ├── crisis.py
-│   │   │   │   │   │   ├── monitors.py
-│   │   │   │   │   │   ├── news.py
-│   │   │   │   │   │   ├── reports.py
-│   │   │   │   │   │   ├── reviews.py
-│   │   │   │   │   │   ├── social.py
-│   │   │   │   │   │   └── __pycache__/
-│   │   │   │   │   ├── reddit/
-│   │   │   │   │   │   ├── __init__.py
-│   │   │   │   │   │   └── reddit_scraper.py
-│   │   │   │   │   ├── youtube/
-│   │   │   │   │   │   └── youtube_scraper.py
-│   │   │   │   │   └── google_news/
-│   │   │   │   │       └── google_news_scraper.py
+│   │   │   │   ├── dependencies/
+│   │   │   │   ├── routes/
+│   │   │   │   │   ├── articles.py
+│   │   │   │   │   ├── auth.py
+│   │   │   │   │   ├── competitors.py
+│   │   │   │   │   ├── crisis.py
+│   │   │   │   │   ├── monitors.py
+│   │   │   │   │   ├── news.py
+│   │   │   │   │   ├── reports.py
+│   │   │   │   │   ├── reviews.py
+│   │   │   │   │   └── social.py
+│   │   │   │   ├── reddit/
+│   │   │   │   │   ├── **init**.py
+│   │   │   │   │   └── reddit_scraper.py
+│   │   │   │   ├── youtube/
+│   │   │   │   │   └── youtube_scraper.py
+│   │   │   │   └── google_news/
+│   │   │   │       └── google_news_scraper.py
+│   │   │   │
 │   │   │   ├── core/
 │   │   │   │   ├── config.py
 │   │   │   │   ├── database.py
 │   │   │   │   ├── security.py
 │   │   │   │   └── websocket.py
-│   │   │   ├── main.py
+│   │   │   │
 │   │   │   ├── middleware/
-│   │   │   │   └── .keep
+│   │   │   │
 │   │   │   ├── models/
 │   │   │   │   ├── alerts.py
 │   │   │   │   ├── articles.py
 │   │   │   │   ├── reputation.py
 │   │   │   │   ├── sentiment.py
 │   │   │   │   └── users.py
+│   │   │   │
 │   │   │   ├── repositories/
-│   │   │   │   └── .keep
 │   │   │   ├── schemas/
-│   │   │   │   └── .keep
+│   │   │   │
 │   │   │   ├── services/
 │   │   │   │   ├── ai_service.py
 │   │   │   │   ├── alert_service.py
 │   │   │   │   ├── auth_service.py
 │   │   │   │   ├── kafka_service.py
 │   │   │   │   ├── monitor_service.py
-│   │   │   │   └── news_service.py
+│   │   │   │   ├── news_service.py
+│   │   │   │   ├── sentiment_service.py
+│   │   │   │   ├── source_quota_service.py
+│   │   │   │   │
+│   │   │   │   ├── competitor_intelligence/
+│   │   │   │   │   ├── **init**.py
+│   │   │   │   │   ├── comparison_engine.py
+│   │   │   │   │   ├── competitor_detector.py
+│   │   │   │   │   ├── competitor_logger.py
+│   │   │   │   │   ├── insight_extractor.py
+│   │   │   │   │   ├── intelligence_common.py
+│   │   │   │   │   ├── intelligence_engine.py
+│   │   │   │   │   ├── intelligence_retrieval.py
+│   │   │   │   │   ├── intelligence_signals.py
+│   │   │   │   │   └── analyzers/
+│   │   │   │   │       ├── **init**.py
+│   │   │   │   │       ├── feature_analyzer.py
+│   │   │   │   │       ├── funding_analyzer.py
+│   │   │   │   │       ├── hiring_analyzer.py
+│   │   │   │   │       ├── merger_analyzer.py
+│   │   │   │   │       ├── pricing_analyzer.py
+│   │   │   │   │       ├── sentiment_analyzer.py
+│   │   │   │   │       ├── sov_analyzer.py
+│   │   │   │   │       └── termination_analyzer.py
+│   │   │   │   │
 │   │   │   │   ├── entity_resolution/
-│   │   │   │   │   ├── __init__.py
-│   │   │   │   │   ├── brand_resolver.py
+│   │   │   │   │   ├── **init**.py
+│   │   │   │   │   ├── brand_matcher.py
+│   │   │   │   │   ├── brand_profile_generator.py
+│   │   │   │   │   ├── embedding_matcher.py
+│   │   │   │   │   ├── entity_detector.py
 │   │   │   │   │   ├── entity_cache.py
 │   │   │   │   │   ├── llm_entity_resolver.py
-│   │   │   │   │   ├── query_builder.py
 │   │   │   │   │   ├── resolver_manager.py
 │   │   │   │   │   └── wikipedia_resolver.py
+│   │   │   │   │
+│   │   │   │   └── observability/
+│   │   │   │       ├── **init**.py
+│   │   │   │       ├── monitoring_logger.py
+│   │   │   │       ├── api_call_logger.py
+│   │   │   │       ├── db_operation_logger.py
+│   │   │   │       ├── entity_trace_logger.py
+│   │   │   │       ├── groq_monitor.py
+│   │   │   │       └──resolver_trace_store.py
+│   │   │   │
 │   │   │   └── utils/
-│   │   │       └── .keep
-│   │   └── requirements.txt
+│   │   │       ├── .keep
+│   │   │       └── time_utils.py
+│   │
+│   │   ├── logs/
+│   │   │   ├── api_logs/
+│   │   │   ├── db_logs/
+│   │   │   ├── entity_traces/
+│   │   │   ├── resolver_logs/
+│   │   │   ├── competitor_analysis/
+│   │   │   │   ├── competitor.log
+│   │   │   │   ├── discovery/
+│   │   │   │   ├── fallbacks/
+│   │   │   │   ├── intelligence/
+│   │   │   │   ├── profiles/
+│   │   │   │   ├── prompts/
+│   │   │   │   ├── retrieval/
+│   │   │   │   ├── swot/
+│   │   │   │   ├── traces/
+│   │   │   │   └── validation/
+│   │   │   ├── entity_resolution/
+│   │   │   │   ├── api_logs/
+│   │   │   │   ├── db_logs/
+│   │   │   │   ├── resolver.log
+│   │   │   │   └── traces/
+│   │   │   ├── metrics/
+│   │   │   │   ├── api_usage.json
+│   │   │   │   ├── cache_stats.json
+│   │   │   │   └── daily_summary.json
+│   │   │   └── monitoring/
+│   │   │       ├── deduplication/
+│   │   │       ├── filtering/
+│   │   │       ├── scheduler/
+│   │   │       │   └── scheduler.log
+│   │   │       ├── source_runs/
+│   │   │       │   ├── google_news/
+│   │   │       │   ├── newsapi/
+│   │   │       │   ├── reddit/
+│   │   │       │   ├── youtube/
+│   │   │       │   └── youtube_monitor_filter/
+│   │   │       └── storage/
+│
 │   ├── deployment/
-│   │   ├── docker/
-│   │   ├── github-actions/
-│   │   ├── kubernetes/
-│   │   ├── nginx/
-│   │   └── terraform/
 │   ├── docs/
-│   │   ├── api/
-│   │   ├── architecture/
-│   │   ├── deployment/
-│   │   ├── diagrams/
-│   │   └── ui_design/
 │   ├── frontend/
-│   │   ├── .env
-│   │   ├── package.json
-│   │   ├── public/
-│   │   ├── src/
-│   │   └── vite.config.js
 │   ├── kafka/
-│   │   ├── consumers/ (empty)
-│   │   ├── docker-compose.yml
-│   │   ├── producers/ (empty)
-│   │   └── topics/ (empty)
 │   ├── reports/
-│   │   ├── exports/
-│   │   ├── pdf/
-│   │   ├── ppt/
-│   │   └── templates/
 │   ├── scrapers/
-│   │   ├── common/ (empty)
-│   │   ├── linkedin/
-│   │   ├── news/
-│   │   ├── reddit/
-│   │   ├── reviews/
-│   │   ├── rss/
-│   │   │   ├── newsapi_ingester.py
-│   │   │   ├── rss_feeds.py
-│   │   │   └── rss_ingester.py
-│   │   ├── scheduler/
-│   │   │   └── rss_scheduler.py
-│   │   ├── search_engines/
-│   │   ├── tiktok/
-│   │   ├── twitter/
-│   │   └── youtube/
 │   ├── scripts/
 │   │   ├── cleanup.py
 │   │   ├── seed_data.py
-│   │   └── setup.sh
+│   │   ├── setup.sh
+│   │   └── download_models.py
 │   ├── storage/
-│   │   ├── migrations/
-│   │   │   └── .keep
-│   │   ├── minio/
-│   │   │   └── .keep
-│   │   ├── opensearch/
-│   │   │   └── .keep
-│   │   ├── postgres/
-│   │   │   ├── .keep
-│   │   │   └── models.sql
-│   │   └── redis/
-│   │       └── .keep
 │   └── tests/
 │       ├── ai/
 │       ├── backend/
 │       ├── frontend/
 │       └── integration/
+│
 ├── docs/
-│   ├── api/
-│   │   └── postman/
-│   │       ├── newsapi_collection.json
-│   │       ├── reddit_collection.json
-│   │       └── youtube_collection.json
+│   └── api/
+│       └── postman/
+│           ├── newsapi_collection.json
+│           ├── reddit_collection.json
+│           └── youtube_collection.json
+│
 ├── kafka/
 │   ├── docker-compose.yml
 │   ├── producers/
 │   │   └── rss_producer.py
 │   └── topics/
 │       └── create_topics.sh
+│
 └── scrapers/
-    ├── common/
-    │   ├── date_utils.py
-    │   ├── helpers.py
-    │   └── logger.py
-    ├── requirements.txt
-    ├── rss/
-    │   ├── newsapi_ingester.py
-    │   ├── rss_feeds.py
-    │   └── rss_ingester.py
-    ├── scheduler/
-    │   └── rss_scheduler.py
+├── common/
+│   ├── date_utils.py
+│   ├── helpers.py
+│   └── logger.py
+├── requirements.txt
+├── rss/
+│   ├── newsapi_ingester.py
+│   ├── rss_feeds.py
+│   └── rss_ingester.py
+└── scheduler/
+└── rss_scheduler.py
+
+--------------------------------------------------------------------------------
+UPDATED STRUCTURE ADDENDUM
+Generated for the currently refactored Reputation Signals and new BW workspace
+modules. Existing structure above is preserved.
+--------------------------------------------------------------------------------
+
+new_brand_monitoring/
+|-- app/
+|   |-- backend/
+|   |   |-- app/
+|   |   |   |-- api/
+|   |   |   |   |-- routes/
+|   |   |   |   |   |-- bw_workspace.py
+|   |   |   |
+|   |   |   |-- services/
+|   |   |   |   |-- bw_workspace/
+|   |   |   |   |   |-- __init__.py
+|   |   |   |   |   |-- ai_intelligence.py
+|   |   |   |   |   |-- repository.py
+|   |   |   |
+|   |   |   |   |-- reputation_signals/
+|   |   |   |   |   |-- __init__.py
+|   |   |   |   |   |-- reputation_common.py
+|   |   |   |   |   |-- reputation_engine.py
+|   |   |   |   |   |-- reputation_logger.py
+|   |   |   |   |   |-- scheduler_pause.py
+|   |   |   |   |   |
+|   |   |   |   |   |-- analyzers/
+|   |   |   |   |   |   |-- __init__.py
+|   |   |   |   |   |   |-- customer_complaint_analyzer.py
+|   |   |   |   |   |   |-- esg_signal_analyzer.py
+|   |   |   |   |   |   |-- executive_controversy_analyzer.py
+|   |   |   |   |   |   |-- fraud_analyzer.py
+|   |   |   |   |   |   |-- investment_signal_analyzer.py
+|   |   |   |   |   |   |-- layoff_analyzer.py
+|   |   |   |   |   |   |-- product_signal_analyzer.py
+|   |   |   |   |   |   |-- regulatory_signal_analyzer.py
+|   |   |   |   |   |   |-- reputation_sentiment_analyzer.py
+|   |   |   |   |   |   |-- security_incident_analyzer.py
+|   |   |   |   |   |
+|   |   |   |   |   |-- brsr/
+|   |   |   |   |   |   |-- __init__.py
+|   |   |   |   |   |   |-- brsr_mapper.py
+|   |   |   |   |   |   |-- brsr_rules.py
+|   |   |   |   |   |
+|   |   |   |   |   |-- classifiers/
+|   |   |   |   |   |   |-- __init__.py
+|   |   |   |   |   |   |-- keyword_classifier.py
+|   |   |   |   |   |   |-- llm_verifier.py
+|   |   |   |   |   |   |-- signal_classifier.py
+|   |   |   |   |   |   |-- zero_shot_classifier.py
+|   |   |   |   |   |
+|   |   |   |   |   |-- engine/
+|   |   |   |   |   |   |-- __init__.py
+|   |   |   |   |   |   |-- analysis.py
+|   |   |   |   |   |   |-- common.py
+|   |   |   |   |   |   |-- identity.py
+|   |   |   |   |   |
+|   |   |   |   |   |-- observability/
+|   |   |   |   |   |   |-- __init__.py
+|   |   |   |   |   |   |-- logger.py
+|   |   |   |   |   |   |-- scheduler_pause.py
+|   |   |   |   |   |
+|   |   |   |   |   |-- prompts/
+|   |   |   |   |   |   |-- esg_prompt.txt
+|   |   |   |   |   |
+|   |   |   |   |   |-- retrieval/
+|   |   |   |   |   |   |-- __init__.py
+|   |   |   |   |   |   |-- entity_validation.py
+|   |   |   |   |   |   |-- evidence.py
+|   |   |   |   |   |   |-- query_planner.py
+|   |   |   |   |   |
+|   |   |   |   |   |-- sdg/
+|   |   |   |   |       |-- __init__.py
+|   |   |   |   |       |-- sdg_mapper.py
+|   |   |   |   |       |-- sdg_rules.py
+|   |
+|   |-- frontend/
+|   |   |-- src/
+|   |   |   |-- api/
+|   |   |   |   |-- bw/
+|   |   |   |   |   |-- bwAiApi.js
+|   |   |   |   |   |-- bwMonitoringApi.js
+|   |   |   |   |   |-- bwWorkspaceApi.js
+|   |   |   |
+|   |   |   |-- components/
+|   |   |   |   |-- bw/
+|   |   |   |   |   |-- BWComingSoonPage.jsx
+|   |   |   |   |   |-- KPICards.jsx
+|   |   |   |   |   |-- MentionsExplorer.jsx
+|   |   |   |   |   |-- ProductPerformanceChart.jsx
+|   |   |   |   |   |-- SentimentChart.jsx
+|   |   |   |   |   |-- SentimentDistributionChart.jsx
+|   |   |   |   |   |-- SourceDistributionChart.jsx
+|   |   |   |   |   |-- WorkspaceSummaryCard.jsx
+|   |   |   |
+|   |   |   |-- pages/
+|   |   |   |   |-- bw/
+|   |   |   |   |   |-- AIAnalysis101Page.jsx
+|   |   |   |   |   |-- DashboardPage.jsx
+|   |   |   |   |   |-- IntelligenceCenterPage.jsx
+|   |   |   |   |   |-- Mentions101Page.jsx
+|   |   |   |   |   |-- Sources101Page.jsx
+|   |   |   |   |   |-- bwWorkspace.css
+|   |   |   |   |   |
+|   |   |   |   |   |-- BrandWorkspace/
+|   |   |   |   |   |   |-- CompanySetupPage.jsx
+|   |   |   |   |   |   |-- WorkspaceOverviewPage.jsx
+|   |   |   |   |   |
+|   |   |   |   |   |-- Monitoring/
+|   |   |   |   |       |-- BrandMonitoringPage.jsx
+|   |   |   |   |       |-- ReputationMonitoringPage.jsx
+|   |   |   |
+|   |   |   |-- utils/
+|   |   |       |-- bw/
+|   |   |           |-- companyStorage.js
+|   |   |           |-- keywordBuilder.js
+|   |   |           |-- sessionCache.js
+|   |
+|   |-- storage/
+|       |-- bw/
+|           |-- campaigns.csv
+|           |-- companies.csv
+|           |-- executives.csv
+|           |-- hashtags.csv
+|           |-- mentions.csv
+|           |-- products.csv

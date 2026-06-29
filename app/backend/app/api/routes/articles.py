@@ -41,8 +41,7 @@ def get_articles(brand: str = Query(..., description="Brand to search for")):
     debug_info = {}
     debug_info["python_executable"] = sys.executable
     debug_info["python_version"] = platform.python_version()
-    debug_info["env"] = dict(os.environ)
-    debug_info["NEWS_API_KEY"] = NEWS_API_KEY
+    debug_info["NEWS_API_KEY"] = "set" if NEWS_API_KEY else "missing"
     try:
         debug_info["newsapi_ip"] = socket.gethostbyname("newsapi.org")
     except Exception as e:

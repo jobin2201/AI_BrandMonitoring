@@ -9,7 +9,7 @@ from kafka import KafkaProducer
 import json
 
 NEWS_API_KEY = os.getenv("NEWS_API_KEY")
-print("Loaded NEWS_API_KEY:", NEWS_API_KEY)
+print("Loaded NEWS_API_KEY:", "set" if NEWS_API_KEY else "missing")
 KAFKA_BOOTSTRAP_SERVERS = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092")
 KAFKA_TOPIC = "brand.news.global"
 
