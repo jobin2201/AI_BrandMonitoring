@@ -2,6 +2,16 @@
 __pycache__/
 *.pyc
 .env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+credentials.json
+secrets.json
+service-account*.json
+token*.json
 venv/
 conda-meta/
 
@@ -18,3 +28,7 @@ dist/
 # OS
 .DS_Store
 Thumbs.db
+
+# Project Specific Exclusions
+app/storage/bw/
+app/backend/logs/
