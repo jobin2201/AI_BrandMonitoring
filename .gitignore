@@ -32,3 +32,6 @@ Thumbs.db
 # Project Specific Exclusions
 app/storage/bw/
 app/backend/logs/
+
+# AI Models
+app/ai_pipeline/models/
