@@ -8,7 +8,7 @@ export default function ProductPerformanceChart({ products }) {
       <div className="bw-panel-heading">
         <div>
           <h2>Product Performance</h2>
-          <p>Mentions by configured product</p>
+          <p>Mentions, sentiment, and average score by configured product</p>
         </div>
       </div>
       <div className="bw-product-bars">
@@ -16,7 +16,7 @@ export default function ProductPerformanceChart({ products }) {
           <div className="bw-product-bar-row" key={product.name}>
             <div className="bw-product-bar-meta">
               <span>{product.name}</span>
-              <strong>{product.mentions}</strong>
+              <strong>{product.mentions} mentions</strong>
             </div>
             <div className="bw-product-bar-track">
               <div
@@ -27,8 +27,15 @@ export default function ProductPerformanceChart({ products }) {
                 }}
               />
             </div>
+            <div className="bw-product-bar-details">
+              <span>{product.positivePercent}% positive</span>
+              <span>Avg score {product.averageScoreLabel}</span>
+            </div>
           </div>
         ))}
+        {!products.length && (
+          <div className="bw-empty">No configured product mentions found yet.</div>
+        )}
       </div>
     </section>
   );

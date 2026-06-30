@@ -1,4 +1,4 @@
-
+﻿
 import { LinkedInIcon, TwitterIcon, InstagramIcon, CNNIcon, BBCIcon } from "./components/icons/SourceIcons";
 import { GoogleNewsIcon } from "./components/icons/GoogleNewsIcon";
 import React, { useEffect, useState } from "react";
@@ -82,6 +82,7 @@ function pageFromPath(pathname) {
 }
 
 function Sidebar({ current, setCurrent }) {
+  const [oldUiOpen, setOldUiOpen] = useState(!current.startsWith("bw-"));
   const [bwOpen, setBwOpen] = useState(current.startsWith("bw-"));
   const [openGroups, setOpenGroups] = useState({
     "bw-monitoring": current.startsWith("bw-monitoring-"),
@@ -107,17 +108,55 @@ function Sidebar({ current, setCurrent }) {
   return (
     <nav style={{ display: "flex", flexDirection: "column", height: "100%", overflowY: "auto" }}>
       <div style={{ fontWeight: 700, fontSize: 22, margin: "0 0 32px 32px", letterSpacing: 1 }}>AIBrand</div>
-      {Object.entries(PAGES).map(([key, label]) => (
-        <a
-          key={key}
-          className={"nav-link" + (current === key ? " active" : "")}
-          href="#"
-          style={{ marginBottom: 8 }}
-          onClick={e => { e.preventDefault(); navigate(key); }}
+      <div style={{ borderTop: "1px solid rgba(255,255,255,0.16)", paddingTop: 10 }}>
+        <button
+          type="button"
+          aria-expanded={oldUiOpen}
+          onClick={() => setOldUiOpen(open => !open)}
+          style={{
+            width: "100%",
+            border: 0,
+            borderLeft: !current.startsWith("bw-") ? "4px solid #eebbc3" : "4px solid transparent",
+            background: !current.startsWith("bw-") ? "#121629" : "transparent",
+            color: "#fff",
+            padding: "12px 24px 12px 28px",
+            font: "inherit",
+            fontWeight: 750,
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            textAlign: "left",
+          }}
         >
-          {label}
-        </a>
-      ))}
+          <span>Old UI</span>
+          <span aria-hidden="true" style={{ fontSize: 14 }}>{oldUiOpen ? "v" : ">"}</span>
+        </button>
+
+        {oldUiOpen && (
+          <div style={{ padding: "5px 0 2px" }}>
+            {Object.entries(PAGES).map(([key, label]) => (
+              <a
+                key={key}
+                href="#"
+                onClick={e => { e.preventDefault(); navigate(key); }}
+                style={{
+                  display: "block",
+                  color: "#fff",
+                  textDecoration: "none",
+                  padding: "9px 18px 9px 40px",
+                  background: current === key ? "#121629" : "transparent",
+                  borderLeft: current === key ? "4px solid #eebbc3" : "4px solid transparent",
+                  fontSize: 15,
+                  lineHeight: 1.25,
+                }}
+              >
+                {label}
+              </a>
+            ))}
+          </div>
+        )}
+      </div>
       <div style={{ marginTop: 10, borderTop: "1px solid rgba(255,255,255,0.16)", paddingTop: 10 }}>
         <button
           type="button"
@@ -140,7 +179,7 @@ function Sidebar({ current, setCurrent }) {
           }}
         >
           <span>BW</span>
-          <span aria-hidden="true" style={{ fontSize: 14 }}>{bwOpen ? "▾" : "▸"}</span>
+          <span aria-hidden="true" style={{ fontSize: 14 }}>{bwOpen ? "v" : ">"}</span>
         </button>
 
         {bwOpen && (
@@ -170,7 +209,7 @@ function Sidebar({ current, setCurrent }) {
                     }}
                   >
                     <span>{item.label}</span>
-                    <span aria-hidden="true">{openGroups[item.key] ? "−" : "+"}</span>
+                    <span aria-hidden="true">{openGroups[item.key] ? "-" : "+"}</span>
                   </button>
                   {openGroups[item.key] && item.children.map(child => (
                     <a
@@ -668,7 +707,7 @@ function SourcesPage({
           style={{ flex: 1, padding: 8, fontSize: 16 }}
           disabled={selected === null}
         />
-        <button type="submit" style={{ marginLeft: 8, padding: "8px 16px" }} disabled={selected === null}>🔍</button>
+        <button type="submit" style={{ marginLeft: 8, padding: "8px 16px" }} disabled={selected === null}>ðŸ”</button>
         <button
           type="button"
           onClick={handleRefresh}
@@ -1034,3 +1073,4 @@ function todayDateValue() {
   const offset = today.getTimezoneOffset() * 60000;
   return new Date(today.getTime() - offset).toISOString().slice(0, 10);
 }
+

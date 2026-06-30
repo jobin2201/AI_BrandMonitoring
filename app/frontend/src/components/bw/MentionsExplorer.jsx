@@ -78,6 +78,7 @@ function classifyMention(mention, workspace) {
     mentionConfidence: optionalNumber(mention.mention_confidence),
     confidenceLabel: mention.confidence_label || "",
     matchedBecause: mention.matched_because || "",
+    runId: mention.run_id || "",
   };
 }
 
@@ -97,11 +98,14 @@ export default function MentionsExplorer({
     youtube: true,
   },
   dateFilters = { startDate: "", endDate: "" },
+  showInlineDateFilter = false,
 }) {
   const [workspace, setWorkspace] = React.useState(null);
   const [mentions, setMentions] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState("");
+  const [localDateFilters, setLocalDateFilters] = React.useState(dateFilters);
+  const [dateFilterNotice, setDateFilterNotice] = React.useState("");
   const [filters, setFilters] = React.useState({
     query: "",
     company: "",
@@ -130,6 +134,19 @@ export default function MentionsExplorer({
         setWorkspace(savedWorkspace);
         setMentions((stored.mentions || []).map(item => classifyMention(item, savedWorkspace)));
         const session = getBwSessionState(`mentions:${title}`, savedWorkspace.companyName);
+        const handoff = title === "Sources101"
+          ? getBwSessionState("sources101-handoff", savedWorkspace.companyName)
+          : null;
+        if (handoff?.date) {
+          setLocalDateFilters({
+            startDate: handoff.date,
+            endDate: handoff.date,
+          });
+          setDateFilterNotice(`Showing exact mentions for ${handoff.label || handoff.date} selected from Dashboard.`);
+        } else {
+          setLocalDateFilters(dateFilters);
+          setDateFilterNotice("");
+        }
         setFilters(session?.filters || (current => ({
           ...current,
           company: savedWorkspace.companyName,
@@ -143,6 +160,12 @@ export default function MentionsExplorer({
     load();
   }, []);
 
+  React.useEffect(() => {
+    if (!showInlineDateFilter) {
+      setLocalDateFilters(dateFilters);
+    }
+  }, [dateFilters, showInlineDateFilter]);
+
   const updateFilter = (field, value) => {
     setFilters(current => {
       const next = { ...current, [field]: value };
@@ -155,7 +178,7 @@ export default function MentionsExplorer({
 
   const eligibleMentions = mentions.filter(mention => (
     sourceFilters[mention.source] !== false
-    && isWithinDateRange(mention, dateFilters)
+    && isWithinDateRange(mention, showInlineDateFilter ? localDateFilters : dateFilters)
   ));
 
   const filteredMentions = eligibleMentions.filter(mention => {
@@ -244,6 +267,61 @@ export default function MentionsExplorer({
             </button>
           </div>
 
+          {showInlineDateFilter && (
+            <section className="bw-inline-date-filter">
+              <div>
+                <h2>Source Date Filter</h2>
+                <p>
+                  {dateFilterNotice || "Filter stored source results by published or collected date."}
+                </p>
+              </div>
+              <div className="bw-inline-date-controls">
+                <label className="bw-label">
+                  Start date
+                  <input
+                    className="bw-input"
+                    type="date"
+                    value={localDateFilters.startDate || ""}
+                    max={localDateFilters.endDate || undefined}
+                    onChange={event => {
+                      setDateFilterNotice("");
+                      setLocalDateFilters(current => ({
+                        ...current,
+                        startDate: event.target.value,
+                      }));
+                    }}
+                  />
+                </label>
+                <label className="bw-label">
+                  End date
+                  <input
+                    className="bw-input"
+                    type="date"
+                    value={localDateFilters.endDate || ""}
+                    min={localDateFilters.startDate || undefined}
+                    onChange={event => {
+                      setDateFilterNotice("");
+                      setLocalDateFilters(current => ({
+                        ...current,
+                        endDate: event.target.value,
+                      }));
+                    }}
+                  />
+                </label>
+                <button
+                  className="bw-secondary-button"
+                  type="button"
+                  onClick={() => {
+                    setDateFilterNotice("");
+                    setLocalDateFilters({ startDate: "", endDate: "" });
+                  }}
+                >
+                  Clear date
+                </button>
+              </div>
+            </section>
+          )}
+
           <section className="bw-mention-filters">
             <label className="bw-label bw-search-field">
               Search mentions
@@ -270,6 +348,7 @@ export default function MentionsExplorer({
             <div>
               <h2>{filteredMentions.length} mentions</h2>
               <p>Stored results for {workspace.companyName}</p>
+              {filteredMentions[0]?.runId && <p>Latest run: {filteredMentions[0].runId}</p>}
             </div>
             <button
               className="bw-secondary-button"

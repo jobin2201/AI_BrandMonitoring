@@ -6,13 +6,17 @@ import os
 import tempfile
 import threading
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
 
 STORAGE_DIR = Path(__file__).resolve().parents[4] / "storage" / "bw"
+TEMP_DEBUG_DIR = Path(__file__).resolve().parents[3] / "logs" / "bw_temporary_debug"
 STORAGE_LOCK = threading.RLock()
+TEMP_DEBUG_LOCK = threading.RLock()
+TEMP_DEBUG_FILE_PATH: Path | None = None
+IST = timezone(timedelta(hours=5, minutes=30))
 
 CSV_SCHEMAS = {
     "companies.csv": [
@@ -50,6 +54,7 @@ CSV_SCHEMAS = {
     ],
     "mentions.csv": [
         "mention_id",
+        "run_id",
         "company_id",
         "company_name",
         "keyword",
@@ -417,6 +422,72 @@ def _confidence_label(score: int) -> str:
     return "low"
 
 
+def _date_suffix(day: int) -> str:
+    if 10 <= day % 100 <= 20:
+        return "th"
+    return {1: "st", 2: "nd", 3: "rd"}.get(day % 10, "th")
+
+
+def _temporary_debug_log_path() -> Path:
+    global TEMP_DEBUG_FILE_PATH
+    now = datetime.now(IST)
+    folder = f"{now.day}{_date_suffix(now.day)}{now.strftime('%B%Y')}Logs"
+    directory = TEMP_DEBUG_DIR / folder
+    with TEMP_DEBUG_LOCK:
+        if TEMP_DEBUG_FILE_PATH is not None:
+            return TEMP_DEBUG_FILE_PATH
+        sequence = 1
+        path = directory / f"bw_match_debug_{now.strftime('%Y%m%d')}_{os.getpid()}_{sequence}.jsonl"
+        while path.exists():
+            sequence += 1
+            path = directory / f"bw_match_debug_{now.strftime('%Y%m%d')}_{os.getpid()}_{sequence}.jsonl"
+        TEMP_DEBUG_FILE_PATH = path
+        return TEMP_DEBUG_FILE_PATH
+
+
+def _write_temporary_match_debug(payload: dict[str, Any]) -> None:
+    try:
+        path = _temporary_debug_log_path()
+        path.parent.mkdir(parents=True, exist_ok=True)
+        now_utc = datetime.now(timezone.utc)
+        now_ist = now_utc.astimezone(IST)
+        payload = {
+            "timestamp_ist_readable": now_ist.strftime("%d-%m-%Y %I:%M:%S %p IST"),
+            "temporary_debug": True,
+            "debug_marker": "TEMPORARY_DEBUG_BW_MATCH",
+            "timestamp_ist": now_ist.isoformat(),
+            "timestamp_utc": now_utc.isoformat(),
+            **payload,
+        }
+        with path.open("a", encoding="utf-8") as handle:
+            handle.write(json.dumps(payload, ensure_ascii=False, default=str) + "\n")
+    except Exception:
+        pass
+
+
+def _primary_match_requirement_failed(
+    keyword_type: str,
+    keyword: str,
+    keyword_matched: bool,
+    matched: dict[str, list[str]],
+    text: str,
+) -> str:
+    if keyword_type == "campaign" and not keyword_matched:
+        return "campaign_keyword_missing"
+    if keyword_type == "executive":
+        last_name = _last_name(keyword)
+        executive_matched = keyword_matched or (len(last_name) >= 4 and _contains_phrase(text, last_name))
+        if not executive_matched:
+            return "executive_keyword_missing"
+    if keyword_type == "product" and not keyword_matched:
+        return "product_keyword_missing"
+    if keyword_type == "hashtag" and not keyword_matched:
+        return "hashtag_keyword_missing"
+    if keyword_type in {"keyword", "brand", "company"} and keyword and not keyword_matched:
+        return f"{keyword_type}_keyword_missing"
+    return ""
+
+
 def _evaluate_mention_quality(
     mention: dict[str, Any],
     workspace: dict[str, Any],
@@ -494,16 +565,52 @@ def _evaluate_mention_quality(
             score = min(score, 45)
             reasons.append("Executive mention needs the normalized last name")
 
+    primary_rejection_reason = _primary_match_requirement_failed(
+        keyword_type,
+        keyword,
+        keyword_matched,
+        matched,
+        text,
+    )
+    if primary_rejection_reason:
+        score = min(score, 45)
+        reasons.append(f"Primary monitored entity missing: {primary_rejection_reason}")
+
     score = max(0, min(100, score))
     if not reasons:
         reasons.append("Stored as a broad monitored keyword match")
 
     threshold = int(os.getenv("BW_MENTION_MIN_CONFIDENCE", "60"))
+    quality_status = "verified" if score >= threshold else "filtered"
+    _write_temporary_match_debug({
+        "stage": "mention_quality_evaluation",
+        "company_name": workspace.get("companyName") or "",
+        "selected_keyword": keyword,
+        "keyword_type": keyword_type or "keyword",
+        "search_query": str(mention.get("searchQuery") or "").strip(),
+        "source": source,
+        "title": title,
+        "content_preview": content[:500],
+        "terms_used_for_matching": {
+            "company_terms": company_terms,
+            "product_terms": product_terms,
+            "leader_terms": leader_terms,
+            "campaign_terms": campaign_terms,
+            "hashtag_terms": hashtag_terms,
+        },
+        "keyword_matched": keyword_matched,
+        "matched_entities": matched,
+        "primary_rejection_reason": primary_rejection_reason,
+        "score": score,
+        "threshold": threshold,
+        "quality_status": quality_status,
+        "matched_because": "; ".join(reasons),
+    })
     return {
         "keyword_type": keyword_type or "keyword",
         "score": score,
         "label": _confidence_label(score),
-        "quality_status": "verified" if score >= threshold else "filtered",
+        "quality_status": quality_status,
         "matched_entities": matched,
         "matched_because": "; ".join(reasons),
     }
@@ -518,6 +625,7 @@ def save_mentions(company_name: str, mentions: list[dict[str, Any]]) -> dict[str
 
     company_id = workspace["companyId"]
     now = datetime.now(timezone.utc).isoformat()
+    run_id = f"bw_run_{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S%f')}_{uuid.uuid4().hex[:8]}"
     with STORAGE_LOCK:
         ensure_storage_files()
         path = STORAGE_DIR / "mentions.csv"
@@ -558,6 +666,7 @@ def save_mentions(company_name: str, mentions: list[dict[str, Any]]) -> dict[str
             })
             rows.append({
                 "mention_id": str(uuid.uuid4()),
+                "run_id": run_id,
                 "company_id": company_id,
                 "company_name": workspace["companyName"],
                 "keyword": str(mention.get("keyword") or "").strip(),
@@ -587,15 +696,31 @@ def save_mentions(company_name: str, mentions: list[dict[str, Any]]) -> dict[str
 
     return {
         "received": len(mentions),
+        "runId": run_id,
         "added": added,
         "filtered": filtered,
         "duplicates": max(0, len(mentions) - added - filtered),
-        "total": sum(1 for row in rows if row.get("company_id") == company_id),
+        "total": sum(1 for row in rows if row.get("company_id") == company_id and row.get("run_id") == run_id),
+        "companyTotal": sum(1 for row in rows if row.get("company_id") == company_id),
         "storageLocation": str(path),
     }
 
 
-def get_mentions(company_name: str) -> list[dict[str, str]]:
+def _latest_run_id(rows: list[dict[str, str]], company_id: str) -> str:
+    company_rows = [
+        row for row in rows
+        if row.get("company_id") == company_id and row.get("run_id")
+    ]
+    if not company_rows:
+        return ""
+    latest = max(
+        company_rows,
+        key=lambda row: row.get("collected_at") or "",
+    )
+    return latest.get("run_id") or ""
+
+
+def get_mentions(company_name: str, run_id: str = "latest") -> list[dict[str, str]]:
     from app.services.sentiment_service import enrich_item_sentiment
 
     workspace = get_workspace(company_name)
@@ -633,7 +758,16 @@ def get_mentions(company_name: str) -> list[dict[str, str]]:
             changed = True
         if changed:
             _write_rows(path, CSV_SCHEMAS["mentions.csv"], rows)
-        return [row for row in rows if row.get("company_id") == company_id]
+        company_rows = [row for row in rows if row.get("company_id") == company_id]
+        if run_id == "all":
+            return company_rows
+        selected_run_id = _latest_run_id(rows, company_id) if run_id in {"", "latest"} else run_id
+        if not selected_run_id:
+            return company_rows
+        return [
+            row for row in company_rows
+            if row.get("run_id") == selected_run_id
+        ]
 
 
 def _mention_key(source: str, url: str, title: str) -> str:

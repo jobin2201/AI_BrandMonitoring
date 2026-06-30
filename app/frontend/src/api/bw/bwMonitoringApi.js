@@ -115,9 +115,10 @@ function normalizeKeywordEntry(keyword, companyName) {
   const type = String(entry?.type || "keyword").trim() || "keyword";
   const company = String(companyName || "").trim();
   const needsCompanyContext = ["campaign", "executive", "product", "hashtag"].includes(type);
-  const searchQuery = needsCompanyContext && company
+  const providedSearchQuery = String(entry?.searchQuery || "").trim();
+  const searchQuery = providedSearchQuery || (needsCompanyContext && company
     ? `${value} ${company}`
-    : value;
+    : value);
   return {
     value,
     type,
@@ -151,6 +152,22 @@ async function saveMonitoringMentions(companyName, mentions) {
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
     throw new Error(data.detail || "Failed to save monitoring mentions");
+  }
+  return data;
+}
+
+export async function getBwMonitoringScope(companyName, selectedKeywords) {
+  const response = await fetch(
+    `${BASE}/api/bw/workspaces/${encodeURIComponent(companyName)}/monitoring-scope`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ selectedKeywords }),
+    },
+  );
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(data.detail || "Failed to resolve monitoring scope");
   }
   return data;
 }

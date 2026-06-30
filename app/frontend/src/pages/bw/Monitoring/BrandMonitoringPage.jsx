@@ -10,6 +10,7 @@ import {
   listBwWorkspaces,
 } from "../../../api/bw/bwWorkspaceApi";
 import {
+  getBwMonitoringScope,
   getBwMonitoringMentions,
   runBwMonitoring,
 } from "../../../api/bw/bwMonitoringApi";
@@ -29,6 +30,42 @@ const SOURCE_LABELS = {
   reddit: "Reddit",
   youtube: "YouTube",
 };
+
+const COMPANY_SCOPE_LIMITS = {
+  brand: 2,
+  product: 2,
+  executive: 1,
+};
+
+function uniqueEntries(entries) {
+  const seen = new Set();
+  return entries.filter(entry => {
+    const key = `${entry.type}:${entry.value}`.toLocaleLowerCase();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function scopedMonitoringEntries(entries, selectedValues) {
+  const selected = new Set(selectedValues);
+  const selectedEntries = entries.filter(entry => selected.has(entry.value));
+  const companySelected = selectedEntries.some(entry => entry.type === "company");
+  if (!companySelected) return selectedEntries;
+
+  const counts = {};
+  const companyScope = entries.filter(entry => {
+    if (entry.type === "company") return true;
+    const limit = COMPANY_SCOPE_LIMITS[entry.type];
+    if (!limit) return false;
+    counts[entry.type] = counts[entry.type] || 0;
+    if (counts[entry.type] >= limit) return false;
+    counts[entry.type] += 1;
+    return true;
+  });
+
+  return uniqueEntries([...companyScope, ...selectedEntries]);
+}
 
 export default function BrandMonitoringPage() {
   const [workspace, setWorkspace] = React.useState(null);
@@ -145,9 +182,17 @@ export default function BrandMonitoringPage() {
     if (!workspace || !selectedKeywords.length || running || !taskKey) return;
     setError("");
     setResult(null);
+    let monitoringEntries = [];
+    try {
+      const scope = await getBwMonitoringScope(workspace.companyName, selectedKeywords);
+      monitoringEntries = scope.entries || [];
+    } catch (scopeError) {
+      setError(scopeError.message || "Failed to resolve monitoring scope");
+      return;
+    }
     const initialProgress = {
       completedTasks: 0,
-      totalTasks: selectedKeywords.length * Object.values(workspace.sources || {}).filter(Boolean).length,
+      totalTasks: monitoringEntries.length * Object.values(workspace.sources || {}).filter(Boolean).length,
       collected: 0,
     };
     setProgress(initialProgress);
@@ -155,9 +200,7 @@ export default function BrandMonitoringPage() {
       taskKey,
       ({ setProgress: setTaskProgress }) => runBwMonitoring({
         companyName: workspace.companyName,
-        keywords: selectedKeywords.map(keyword => (
-          generatedKeywords.find(entry => entry.value === keyword) || { value: keyword, type: "keyword" }
-        )),
+        keywords: monitoringEntries,
         sources: workspace.sources,
         onProgress: setTaskProgress,
       }),
@@ -189,9 +232,19 @@ export default function BrandMonitoringPage() {
     .filter(([, enabled]) => enabled)
     .map(([source]) => SOURCE_LABELS[source])
     .filter(Boolean);
+  const effectiveMonitoringEntries = React.useMemo(
+    () => scopedMonitoringEntries(generatedKeywords, selectedKeywords),
+    [generatedKeywords, selectedKeywords],
+  );
   const progressPercent = progress?.totalTasks
     ? Math.round((progress.completedTasks / progress.totalTasks) * 100)
     : 0;
+  const mentionsReady = Boolean(result) && !running;
+
+  const openMentionsResults = () => {
+    window.history.pushState({ page: "bw-mentions" }, "", "/bw/mentions");
+    window.dispatchEvent(new PopStateEvent("popstate"));
+  };
 
   return (
     <div className="bw-page">
@@ -248,6 +301,10 @@ export default function BrandMonitoringPage() {
               <div className="bw-stat-value">{selectedKeywords.length}</div>
             </div>
             <div className="bw-stat">
+              <div className="bw-stat-label">Effective Terms</div>
+              <div className="bw-stat-value">{effectiveMonitoringEntries.length}</div>
+            </div>
+            <div className="bw-stat">
               <div className="bw-stat-label">Stored Mentions</div>
               <div className="bw-stat-value">{storedTotal}</div>
             </div>
@@ -256,7 +313,7 @@ export default function BrandMonitoringPage() {
           <section className="bw-section">
             <h2 className="bw-section-title">Generated Keywords</h2>
             <p className="bw-section-copy">
-              Click keywords to select which should be monitored. Only selected keywords will be used for monitoring.
+              Select specific chips to monitor only those terms. Selecting the company uses a focused company scope, and any extra selected chips are added to it.
             </p>
             <div className="bw-chip-list">
               {generatedKeywords.map(keyword => {
@@ -313,6 +370,18 @@ export default function BrandMonitoringPage() {
               disabled={running || !selectedKeywords.length || !enabledSources.length}
             >
               {running ? "Monitoring..." : "Start Monitoring"}
+            </button>
+            <button
+              className="bw-secondary-button bw-monitoring-results-button"
+              type="button"
+              onClick={openMentionsResults}
+              disabled={!mentionsReady}
+              title={mentionsReady
+                ? "Open Mentions101 to inspect this run's stored results"
+                : "Mentions101 will be available after monitoring reaches 100%"
+              }
+            >
+              View Mentions Results
             </button>
           </section>
 

@@ -59,7 +59,27 @@ function createBlankWorkspace() {
   });
 }
 
-function RepeatableTextList({ label, values, placeholder, onChange }) {
+function hasText(value) {
+  return String(value || "").trim().length > 0;
+}
+
+function hasOneText(values) {
+  return (values || []).some(hasText);
+}
+
+function hasOneObjectText(values, fields) {
+  return (values || []).some(item => fields.some(field => hasText(item?.[field])));
+}
+
+function fieldClass(hasError) {
+  return `bw-input${hasError ? " bw-field-error" : ""}`;
+}
+
+function sectionClass(hasError) {
+  return `bw-section${hasError ? " bw-section-error" : ""}`;
+}
+
+function RepeatableTextList({ label, values, placeholder, onChange, error }) {
   const update = (index, value) => {
     onChange(values.map((item, itemIndex) => (itemIndex === index ? value : item)));
   };
@@ -70,14 +90,15 @@ function RepeatableTextList({ label, values, placeholder, onChange }) {
   };
 
   return (
-    <section className="bw-section">
+    <section className={sectionClass(Boolean(error))}>
       <h2 className="bw-section-title">{label}</h2>
+      {error && <p className="bw-validation-message">{error}</p>}
       <p className="bw-section-copy">Add every {label.toLowerCase()} entry relevant to this workspace.</p>
       <div className="bw-repeat-list">
         {values.map((value, index) => (
           <div className="bw-repeat-row" key={`${label}-${index}`}>
             <input
-              className="bw-input"
+              className={fieldClass(Boolean(error))}
               value={value}
               onChange={event => update(index, event.target.value)}
               placeholder={placeholder}
@@ -108,11 +129,29 @@ function RepeatableTextList({ label, values, placeholder, onChange }) {
 export default function CompanySetupPage() {
   const [workspace, setWorkspace] = React.useState(createBlankWorkspace);
   const [status, setStatus] = React.useState(null);
+  const [validationErrors, setValidationErrors] = React.useState({});
   const [busy, setBusy] = React.useState(false);
   const lastLookupRef = React.useRef("");
+  const statusRef = React.useRef(null);
+  const validationRef = React.useRef(null);
+
+  const scrollToStatus = () => {
+    window.setTimeout(() => {
+      statusRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    }, 50);
+  };
 
   const updateField = (field, value) => {
     setWorkspace(current => ({ ...current, [field]: value }));
+    setValidationErrors(current => {
+      if (!current[field]) return current;
+      const next = { ...current };
+      delete next[field];
+      return next;
+    });
     setStatus(null);
   };
 
@@ -125,6 +164,12 @@ export default function CompanySetupPage() {
       ceos,
       ceo: ceos[0] || { name: "", role: "" },
     }));
+    setValidationErrors(current => {
+      if (!current.ceos) return current;
+      const next = { ...current };
+      delete next.ceos;
+      return next;
+    });
     setStatus(null);
   };
 
@@ -136,7 +181,41 @@ export default function CompanySetupPage() {
       ceos: next,
       ceo: next[0],
     }));
+    setValidationErrors(current => {
+      if (!current.ceos) return current;
+      const nextErrors = { ...current };
+      delete nextErrors.ceos;
+      return nextErrors;
+    });
     setStatus(null);
+  };
+
+  const validateWorkspace = () => {
+    const errors = {};
+    if (!hasText(workspace.companyName)) errors.companyName = "Company name is required.";
+    if (!hasText(workspace.industry)) errors.industry = "Industry is required.";
+    if (!hasOneText(workspace.brands)) errors.brands = "Add at least one brand name.";
+    if (!hasOneObjectText(workspace.ceos, ["name", "role"])) errors.ceos = "Add at least one CEO.";
+    if (!hasOneObjectText(workspace.products, ["name", "description"])) errors.products = "Add at least one product.";
+    if (!hasOneObjectText(workspace.executives, ["name", "role"])) errors.executives = "Add at least one executive.";
+    if (!hasOneText(workspace.campaigns)) errors.campaigns = "Add at least one campaign.";
+    if (!hasOneText(workspace.hashtags)) errors.hashtags = "Add at least one hashtag.";
+    if (!hasOneText(workspace.keywords)) errors.keywords = "Add at least one keyword.";
+    setValidationErrors(errors);
+    if (Object.keys(errors).length) {
+      setStatus({
+        type: "error",
+        message: "Please complete the highlighted required workspace sections before saving.",
+      });
+      window.setTimeout(() => {
+        validationRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
+      }, 50);
+      return false;
+    }
+    return true;
   };
 
   const updateProduct = (index, field, value) => {
@@ -178,6 +257,7 @@ export default function CompanySetupPage() {
     try {
       const saved = await getBwWorkspace(companyName);
       setWorkspace(ensureEditable(saved));
+      setValidationErrors({});
       saveCompanyWorkspace(saved);
       setActiveCompanyName(saved.companyName);
       lastLookupRef.current = saved.companyName.toLocaleLowerCase();
@@ -189,10 +269,18 @@ export default function CompanySetupPage() {
     } catch (error) {
       lastLookupRef.current = lookupKey;
       if (error.status === 404) {
+        if (!silentNotFound) {
+          setValidationErrors({});
+          setWorkspace({
+            ...createBlankWorkspace(),
+            companyName,
+          });
+        }
         setStatus(silentNotFound ? null : {
           type: "info",
           message: `No saved workspace found for ${companyName}. Continue to create it.`,
         });
+        if (!silentNotFound) scrollToStatus();
       } else {
         setStatus({ type: "error", message: error.message });
       }
@@ -203,6 +291,7 @@ export default function CompanySetupPage() {
 
   const handleSave = async event => {
     event.preventDefault();
+    if (!validateWorkspace()) return;
     setBusy(true);
     setStatus({ type: "loading", message: "Saving workspace..." });
     try {
@@ -210,6 +299,7 @@ export default function CompanySetupPage() {
       const saved = saveCompanyWorkspace(response.workspace);
       setActiveCompanyName(saved.companyName);
       lastLookupRef.current = "";
+      setValidationErrors({});
       setWorkspace(createBlankWorkspace());
       setStatus({
         type: "success",
@@ -225,6 +315,7 @@ export default function CompanySetupPage() {
 
   const handleNewCompany = () => {
     setWorkspace(createBlankWorkspace());
+    setValidationErrors({});
     setStatus(null);
     lastLookupRef.current = "";
   };
@@ -240,20 +331,24 @@ export default function CompanySetupPage() {
       </div>
 
       <form className="bw-setup-form" onSubmit={handleSave}>
-        <section className="bw-section">
+        <section className={sectionClass(validationErrors.companyName || validationErrors.industry)}>
           <h2 className="bw-section-title">Company</h2>
+          {(validationErrors.companyName || validationErrors.industry) && (
+            <p className="bw-validation-message">
+              {[validationErrors.companyName, validationErrors.industry].filter(Boolean).join(" ")}
+            </p>
+          )}
           <p className="bw-section-copy">Core identity for the active brand workspace.</p>
           <div className="bw-field-grid">
             <label className="bw-label">
               Company Name
               <span className="bw-company-lookup">
                 <input
-                  className="bw-input"
+                  className={fieldClass(validationErrors.companyName)}
                   value={workspace.companyName}
                   onChange={event => updateField("companyName", event.target.value)}
                   onBlur={() => loadExistingCompany({ silentNotFound: true })}
                   placeholder="TCS"
-                  required
                 />
                 <button
                   className="bw-load-button"
@@ -268,7 +363,7 @@ export default function CompanySetupPage() {
             <label className="bw-label">
               Industry
               <input
-                className="bw-input"
+                className={fieldClass(validationErrors.industry)}
                 value={workspace.industry}
                 onChange={event => updateField("industry", event.target.value)}
                 placeholder="Technology"
@@ -282,22 +377,24 @@ export default function CompanySetupPage() {
           values={workspace.brands}
           placeholder="Enter brand name"
           onChange={values => updateField("brands", values)}
+          error={validationErrors.brands}
         />
 
-        <section className="bw-section">
+        <section className={sectionClass(validationErrors.ceos)}>
           <h2 className="bw-section-title">CEOs</h2>
+          {validationErrors.ceos && <p className="bw-validation-message">{validationErrors.ceos}</p>}
           <p className="bw-section-copy">Add one or more chief executives and their roles.</p>
           <div className="bw-repeat-list">
             {workspace.ceos.map((ceo, index) => (
               <div className="bw-executive-row" key={`ceo-${index}`}>
                 <input
-                  className="bw-input"
+                  className={fieldClass(validationErrors.ceos)}
                   value={ceo.name}
                   onChange={event => updateCeo(index, "name", event.target.value)}
                   placeholder="CEO name"
                 />
                 <textarea
-                  className="bw-textarea"
+                  className={`bw-textarea${validationErrors.ceos ? " bw-field-error" : ""}`}
                   value={ceo.role}
                   onChange={event => updateCeo(index, "role", event.target.value)}
                   placeholder="CEO role or description"
@@ -326,20 +423,21 @@ export default function CompanySetupPage() {
           </button>
         </section>
 
-        <section className="bw-section">
+        <section className={sectionClass(validationErrors.products)}>
           <h2 className="bw-section-title">Products</h2>
+          {validationErrors.products && <p className="bw-validation-message">{validationErrors.products}</p>}
           <p className="bw-section-copy">Add product names with enough context for later analysis.</p>
           <div className="bw-repeat-list">
             {workspace.products.map((product, index) => (
               <div className="bw-product-row" key={`product-${index}`}>
                 <input
-                  className="bw-input"
+                  className={fieldClass(validationErrors.products)}
                   value={product.name}
                   onChange={event => updateProduct(index, "name", event.target.value)}
                   placeholder="Product name"
                 />
                 <textarea
-                  className="bw-textarea"
+                  className={`bw-textarea${validationErrors.products ? " bw-field-error" : ""}`}
                   value={product.description}
                   onChange={event => updateProduct(index, "description", event.target.value)}
                   placeholder="Product description"
@@ -368,8 +466,9 @@ export default function CompanySetupPage() {
           </button>
         </section>
 
-        <section className="bw-section">
+        <section className={sectionClass(validationErrors.executives)}>
           <h2 className="bw-section-title">Executives</h2>
+          {validationErrors.executives && <p className="bw-validation-message">{validationErrors.executives}</p>}
           <p className="bw-section-copy">
             Add each executive name and their current or former role.
           </p>
@@ -377,13 +476,13 @@ export default function CompanySetupPage() {
             {workspace.executives.map((executive, index) => (
               <div className="bw-executive-row" key={`executive-${index}`}>
                 <input
-                  className="bw-input"
+                  className={fieldClass(validationErrors.executives)}
                   value={executive.name}
                   onChange={event => updateExecutive(index, "name", event.target.value)}
                   placeholder="Executive name"
                 />
                 <textarea
-                  className="bw-textarea"
+                  className={`bw-textarea${validationErrors.executives ? " bw-field-error" : ""}`}
                   value={executive.role}
                   onChange={event => updateExecutive(index, "role", event.target.value)}
                   placeholder="Role or description"
@@ -416,18 +515,21 @@ export default function CompanySetupPage() {
           values={workspace.campaigns}
           placeholder="Campaign name"
           onChange={values => updateField("campaigns", values)}
+          error={validationErrors.campaigns}
         />
         <RepeatableTextList
           label="Hashtags"
           values={workspace.hashtags}
           placeholder="#campaign"
           onChange={values => updateField("hashtags", values)}
+          error={validationErrors.hashtags}
         />
         <RepeatableTextList
           label="Keywords"
           values={workspace.keywords}
           placeholder="Monitoring keyword"
           onChange={values => updateField("keywords", values)}
+          error={validationErrors.keywords}
         />
 
         <section className="bw-section">
@@ -459,7 +561,14 @@ export default function CompanySetupPage() {
           </button>
         </div>
         {status && (
-          <div className={`bw-save-notice bw-save-notice-${status.type}`} role="status">
+          <div
+            ref={node => {
+              statusRef.current = node;
+              validationRef.current = node;
+            }}
+            className={`bw-save-notice bw-save-notice-${status.type}`}
+            role="status"
+          >
             <strong>{status.message}</strong>
             {status.location && <span>CSV storage: {status.location}</span>}
           </div>

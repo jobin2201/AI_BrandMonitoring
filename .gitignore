@@ -35,3 +35,5 @@ app/backend/logs/
 
 # AI Models
 app/ai_pipeline/models/
+
+app/frontend/.vite-build-check/

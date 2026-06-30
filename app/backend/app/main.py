@@ -1,4 +1,5 @@
 import asyncio
+import os
 import platform
 
 if platform.system() == "Windows":
@@ -52,6 +53,24 @@ app.include_router(bw_workspace_router, prefix="/api/bw", tags=["BW Workspace"])
 scheduler = BackgroundScheduler()
 
 
+def _env_enabled(name: str, default: str = "true") -> bool:
+    return os.getenv(name, default).strip().lower() not in {
+        "0",
+        "false",
+        "no",
+        "off",
+        "disabled",
+    }
+
+
+def automatic_monitoring_enabled() -> bool:
+    return all([
+        _env_enabled("ENABLE_SCHEDULER"),
+        _env_enabled("MONITORING_SCHEDULER_ENABLED"),
+        _env_enabled("AUTO_MONITORING_ENABLED"),
+    ])
+
+
 def scheduled_monitoring_cycle():
     if is_competitor_scheduler_paused() or is_reputation_scheduler_paused():
         print(
@@ -67,6 +86,12 @@ def scheduled_monitoring_cycle():
 def start_scheduler():
     get_gliner_model()
     print_groq_limits()
+    if not automatic_monitoring_enabled():
+        print(
+            "[SCHEDULER] Automatic brand monitoring disabled by env. "
+            "Manual/live monitor runs are still available."
+        )
+        return
     scheduler.add_job(
         scheduled_monitoring_cycle,
         trigger="interval",
@@ -80,7 +105,8 @@ def start_scheduler():
 
 @app.on_event("shutdown")
 def stop_scheduler():
-    scheduler.shutdown()
+    if scheduler.running:
+        scheduler.shutdown()
 
 
 @app.get("/")

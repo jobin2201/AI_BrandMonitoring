@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 
 from app.services.bw_workspace.repository import (
@@ -15,6 +15,7 @@ from app.services.bw_workspace.repository import (
     save_workspace,
 )
 from app.services.bw_workspace.ai_intelligence import generate_workspace_intelligence
+from app.services.bw_workspace.monitoring_scope import resolve_monitoring_scope
 from app.services.bw_workspace.reputation_service import generate_bw_reputation
 
 
@@ -67,6 +68,10 @@ class MentionsInput(BaseModel):
     mentions: list[MentionInput] = Field(default_factory=list)
 
 
+class MonitoringScopeInput(BaseModel):
+    selectedKeywords: list[str] = Field(default_factory=list)
+
+
 class ReputationInput(BaseModel):
     brandId: str = Field(min_length=1)
     forceRefresh: bool = False
@@ -112,13 +117,19 @@ def save_bw_workspace(payload: WorkspaceInput) -> dict[str, Any]:
 
 
 @router.get("/workspaces/{company_name}/mentions")
-def get_bw_mentions(company_name: str) -> dict[str, Any]:
+def get_bw_mentions(
+    company_name: str,
+    run_id: str = Query("latest", description="Use latest, all, or a specific monitoring run id"),
+) -> dict[str, Any]:
     try:
-        mentions = get_mentions(company_name)
+        mentions = get_mentions(company_name, run_id=run_id)
     except ValueError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
+    active_run_id = mentions[0].get("run_id") if mentions else ""
     return {
         "company_name": company_name,
+        "run_id": active_run_id,
+        "run_filter": run_id,
         "mentions": mentions,
         "total": len(mentions),
         "storage_location": str(STORAGE_DIR / "mentions.csv"),
@@ -139,6 +150,14 @@ def save_bw_mentions(company_name: str, payload: MentionsInput) -> dict[str, Any
         "message": f'Monitoring results saved for "{company_name}"',
         **result,
     }
+
+
+@router.post("/workspaces/{company_name}/monitoring-scope")
+def get_bw_monitoring_scope(company_name: str, payload: MonitoringScopeInput) -> dict[str, Any]:
+    workspace = get_workspace(company_name)
+    if workspace is None:
+        raise HTTPException(status_code=404, detail="Company workspace not found")
+    return resolve_monitoring_scope(workspace, payload.selectedKeywords)
 
 
 @router.post("/workspaces/{company_name}/ai-analysis")

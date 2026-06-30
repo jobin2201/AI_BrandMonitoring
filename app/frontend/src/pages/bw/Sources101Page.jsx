@@ -9,6 +9,7 @@ export default function Sources101Page({ sourceFilters, dateFilters }) {
       description="Review stored evidence by Google News, News API, Reddit, and YouTube."
       sourceFilters={sourceFilters}
       dateFilters={dateFilters}
+      showInlineDateFilter
     />
   );
 }
